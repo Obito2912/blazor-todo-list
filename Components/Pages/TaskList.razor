@@ -1,0 +1,104 @@
+@page "/tasks"
+@rendermode InteractiveServer
+
+<PageTitle>Tasks | My Quest</PageTitle>
+
+<section class="task-page" aria-labelledby="task-list-heading">
+    <header class="task-page__header">
+        <div>
+            <h1 id="task-list-heading">My tasks</h1>
+            <p>Keep track of what matters today.</p>
+        </div>
+        <a class="btn btn-primary" href="tasks/new">Add task</a>
+    </header>
+
+    <div class="task-toolbar">
+        <SearchBar @bind-Value="searchTerm" />
+        <FilterDropDown @bind-Value="selectedFilter" />
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="task-state" role="status" aria-live="polite">
+            <div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div>
+            <span>Loading tasks…</span>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            <strong>Tasks could not be loaded.</strong>
+            <span>@ErrorMessage</span>
+            @if (Retry.HasDelegate)
+            {
+                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="Retry">Try again</button>
+            }
+        </div>
+    }
+    else if (FilteredTasks.Count == 0)
+    {
+        <div class="task-state task-state--empty">
+            <h2>@EmptyStateTitle</h2>
+            <p>@EmptyStateMessage</p>
+            @if (Tasks.Count == 0)
+            {
+                <a class="btn btn-primary" href="tasks/new">Create your first task</a>
+            }
+            else
+            {
+                <button type="button" class="btn btn-outline-secondary" @onclick="ClearFilters">Clear filters</button>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="task-list" aria-live="polite">
+            @foreach (var task in FilteredTasks)
+            {
+                <TaskCard @key="task.Id"
+                          Title="@task.Title"
+                          Description="@task.Description"
+                          IsCompleted="@task.IsCompleted"
+                          DueDate="@task.DueDate"
+                          CompletionChanged="completed => CompletionChanged.InvokeAsync((task.Id, completed))"
+                          OnEdit="() => EditRequested.InvokeAsync(task.Id)"
+                          OnDelete="() => DeleteRequested.InvokeAsync(task.Id)" />
+            }
+        </div>
+    }
+</section>
+
+@code {
+    private string searchTerm = string.Empty;
+    private TaskFilter selectedFilter = TaskFilter.All;
+
+    [Parameter] public IReadOnlyList<TaskListItem> Tasks { get; set; } = [];
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public EventCallback Retry { get; set; }
+    [Parameter] public EventCallback<int> EditRequested { get; set; }
+    [Parameter] public EventCallback<int> DeleteRequested { get; set; }
+    [Parameter] public EventCallback<(int Id, bool IsCompleted)> CompletionChanged { get; set; }
+
+    private IReadOnlyList<TaskListItem> FilteredTasks => Tasks
+        .Where(task => string.IsNullOrWhiteSpace(searchTerm)
+            || task.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+        .Where(task => selectedFilter switch
+        {
+            TaskFilter.Completed => task.IsCompleted,
+            TaskFilter.Pending => !task.IsCompleted,
+            _ => true
+        })
+        .ToList();
+
+    private string EmptyStateTitle => Tasks.Count == 0 ? "No tasks yet" : "No matching tasks";
+    private string EmptyStateMessage => Tasks.Count == 0
+        ? "Create a task and take the first step toward completing your quest."
+        : "Try another search or status filter.";
+
+    private void ClearFilters()
+    {
+        searchTerm = string.Empty;
+        selectedFilter = TaskFilter.All;
+    }
+}

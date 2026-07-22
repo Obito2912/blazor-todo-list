@@ -1,0 +1,37 @@
+<article class="task-card @(IsCompleted ? "task-card--completed" : null)">
+    <input class="form-check-input task-toggle"
+           type="checkbox"
+           checked="@IsCompleted"
+           aria-label="Mark @Title as @(IsCompleted ? "pending" : "completed")"
+           @onchange="HandleCompletionChange" />
+
+    <div class="task-card__content">
+        <h2>@Title</h2>
+        @if (!string.IsNullOrWhiteSpace(Description))
+        {
+            <p>@Description</p>
+        }
+        @if (DueDate is not null)
+        {
+            <time datetime="@DueDate.Value.ToString("yyyy-MM-dd")">Due @DueDate.Value.ToString("MMM d, yyyy")</time>
+        }
+    </div>
+
+    <div class="task-card__actions" aria-label="Actions for @Title">
+        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="OnEdit">Edit</button>
+        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="OnDelete">Delete</button>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public bool IsCompleted { get; set; }
+    [Parameter] public DateTime? DueDate { get; set; }
+    [Parameter] public EventCallback<bool> CompletionChanged { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+
+    private Task HandleCompletionChange(ChangeEventArgs args) =>
+        CompletionChanged.InvokeAsync(args.Value is true);
+}

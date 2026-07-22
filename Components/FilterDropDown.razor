@@ -1,0 +1,23 @@
+<div>
+    <label class="visually-hidden" for="@InputId">Filter tasks by status</label>
+    <select id="@InputId" class="form-select task-filter" value="@Value" @onchange="HandleChange">
+        <option value="@TaskFilter.All">All tasks</option>
+        <option value="@TaskFilter.Pending">Pending</option>
+        <option value="@TaskFilter.Completed">Completed</option>
+    </select>
+</div>
+
+@code {
+    [Parameter] public TaskFilter Value { get; set; } = TaskFilter.All;
+    [Parameter] public EventCallback<TaskFilter> ValueChanged { get; set; }
+    [Parameter] public string InputId { get; set; } = "task-filter";
+
+    private Task HandleChange(ChangeEventArgs args)
+    {
+        var value = Enum.TryParse<TaskFilter>(args.Value?.ToString(), out var filter)
+            ? filter
+            : TaskFilter.All;
+
+        return ValueChanged.InvokeAsync(value);
+    }
+}
