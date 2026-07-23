@@ -1,10 +1,13 @@
-<div>
-    <label class="visually-hidden" for="@InputId">Filter tasks by status</label>
-    <select id="@InputId" class="form-select task-filter" value="@Value" @onchange="HandleChange">
-        <option value="@TaskFilter.All">All tasks</option>
-        <option value="@TaskFilter.Pending">Pending</option>
-        <option value="@TaskFilter.Completed">Completed</option>
-    </select>
+<div id="@InputId" class="task-filter" role="group" aria-label="Filter tasks by status">
+    @foreach (var filter in Enum.GetValues<TaskFilter>())
+    {
+        <button type="button"
+                class="@(Value == filter ? "is-active" : null)"
+                aria-pressed="@(Value == filter)"
+                @onclick="() => SelectFilter(filter)">
+            @filter
+        </button>
+    }
 </div>
 
 @code {
@@ -12,12 +15,5 @@
     [Parameter] public EventCallback<TaskFilter> ValueChanged { get; set; }
     [Parameter] public string InputId { get; set; } = "task-filter";
 
-    private Task HandleChange(ChangeEventArgs args)
-    {
-        var value = Enum.TryParse<TaskFilter>(args.Value?.ToString(), out var filter)
-            ? filter
-            : TaskFilter.All;
-
-        return ValueChanged.InvokeAsync(value);
-    }
+    private Task SelectFilter(TaskFilter filter) => ValueChanged.InvokeAsync(filter);
 }

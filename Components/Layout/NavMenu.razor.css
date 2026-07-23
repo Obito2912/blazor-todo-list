@@ -1,105 +1,46 @@
-.navbar-toggler {
-    appearance: none;
-    cursor: pointer;
-    width: 3.5rem;
-    height: 2.5rem;
-    color: white;
-    position: absolute;
-    top: 0.5rem;
-    right: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/1.75rem rgba(255, 255, 255, 0.1);
+.navbar-toggler { position: absolute; opacity: 0; pointer-events: none; }
+.brand-row { padding: 3.4rem 2.5rem 2rem; }
+.brand { display: flex; gap: 1rem; align-items: center; color: #fff; text-decoration: none; }
+.brand__mark { color: #ffc84d; font-size: 3.2rem; filter: drop-shadow(0 .2rem .15rem rgba(30, 18, 83, .24)); line-height: 1; }
+.brand strong, .brand small { display: block; }
+.brand strong { font-size: 2rem; letter-spacing: -.03em; }
+.brand small { margin-top: .25rem; color: #d2c5f2; font-size: 1rem; }
+.nav { gap: .55rem; padding: 1.6rem 1.45rem; }
+.nav-item { font-size: 1.05rem; }
+.nav-item ::deep .nav-link {
+    display: flex; min-height: 4.5rem; gap: 1.2rem; align-items: center; padding: 0 1.25rem;
+    color: #fff; border-radius: 1.3rem; font-weight: 600;
 }
-
-.navbar-toggler:checked {
-    background-color: rgba(255, 255, 255, 0.5);
+.nav-item ::deep a.active { color: #fff; background: linear-gradient(135deg, rgba(178,132,239,.78), rgba(145,98,220,.82)); }
+.nav-item ::deep .nav-link:hover { color: #fff; background-color: rgba(255,255,255,.1); }
+.nav-item ::deep svg {
+    width: 1.75rem; height: 1.75rem; fill: none; stroke: currentColor; stroke-linecap: round;
+    stroke-linejoin: round; stroke-width: 1.7;
 }
-
-.top-row {
-    min-height: 3.5rem;
-    background-color: rgba(0,0,0,0.4);
+.profile-card {
+    position: absolute; right: 1.45rem; bottom: 2rem; left: 1.45rem; display: grid;
+    grid-template-columns: auto 1fr auto; gap: .75rem; align-items: center; padding: 1rem; color: #fff;
+    background: rgba(52,34,116,.48); border: 1px solid rgba(255,255,255,.1); border-radius: 1.2rem;
 }
+.avatar { position: relative; display: grid; width: 3.2rem; height: 3.2rem; place-items: center; background: #8f63dc; border-radius: 50%; font-weight: 650; }
+.avatar i { position: absolute; right: -.05rem; bottom: .1rem; width: .8rem; height: .8rem; background: #35d2a1; border-radius: 50%; }
+.profile-card__copy { min-width: 0; }
+.profile-card strong, .profile-card small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-card strong { font-size: .88rem; }
+.profile-card small { margin-top: .15rem; color: #d5c9ef; font-size: .68rem; }
+.profile-card > svg { width: 1.15rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 2; }
+.navbar-toggler-label { display: none; }
 
-.navbar-brand {
-    font-size: 1.1rem;
-}
-
-.bi {
-    display: inline-block;
-    position: relative;
-    width: 1.25rem;
-    height: 1.25rem;
-    margin-right: 0.75rem;
-    top: -1px;
-    background-size: cover;
-}
-
-.bi-house-door-fill-nav-menu {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' class='bi bi-house-door-fill' viewBox='0 0 16 16'%3E%3Cpath d='M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5Z'/%3E%3C/svg%3E");
-}
-
-.bi-plus-square-fill-nav-menu {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' class='bi bi-plus-square-fill' viewBox='0 0 16 16'%3E%3Cpath d='M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm6.5 4.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3a.5.5 0 0 1 1 0z'/%3E%3C/svg%3E");
-}
-
-.bi-list-nested-nav-menu {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' class='bi bi-list-nested' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M4.5 11.5A.5.5 0 0 1 5 11h10a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zm-2-4A.5.5 0 0 1 3 7h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm-2-4A.5.5 0 0 1 1 3h10a.5.5 0 0 1 0 1H1a.5.5 0 0 1-.5-.5z'/%3E%3C/svg%3E");
-}
-
-.nav-item {
-    font-size: 0.9rem;
-    padding-bottom: 0.5rem;
-}
-
-    .nav-item:first-of-type {
-        padding-top: 1rem;
-    }
-
-    .nav-item:last-of-type {
-        padding-bottom: 1rem;
-    }
-
-    .nav-item ::deep .nav-link {
-        color: #d7d7d7;
-        background: none;
-        border: none;
-        border-radius: 4px;
-        height: 3rem;
-        display: flex;
-        align-items: center;
-        line-height: 3rem;
-        width: 100%;
-    }
-
-.nav-item ::deep a.active {
-    background-color: rgba(255,255,255,0.37);
-    color: white;
-}
-
-.nav-item ::deep .nav-link:hover {
-    background-color: rgba(255,255,255,0.1);
-    color: white;
-}
-
-.nav-scrollable {
-    display: none;
-}
-
-.navbar-toggler:checked ~ .nav-scrollable {
-    display: block;
-}
-
-@media (min-width: 641px) {
-    .navbar-toggler {
-        display: none;
-    }
-
-    .nav-scrollable {
-        /* Never collapse the sidebar for wide screens */
-        display: block;
-
-        /* Allow sidebar to scroll for tall menus */
-        height: calc(100vh - 3.5rem);
-        overflow-y: auto;
-    }
+@media (max-width: 640.98px) {
+    .brand-row { display: flex; align-items: center; justify-content: space-between; min-height: 5.4rem; padding: 1rem 1.25rem; }
+    .brand { gap: .65rem; }
+    .brand__mark { font-size: 2.1rem; }
+    .brand strong { font-size: 1.55rem; }
+    .brand small, .profile-card { display: none; }
+    .navbar-toggler-label { display: grid; width: 2.75rem; height: 2.75rem; cursor: pointer; place-content: center; gap: .3rem; }
+    .navbar-toggler-label span { display: block; width: 1.75rem; height: .18rem; background: #fff; border-radius: 1rem; }
+    .nav-scrollable { display: none; padding-bottom: 1rem; }
+    .brand-row:has(.navbar-toggler:checked) + .nav-scrollable { display: block; }
+    .nav { padding: 0 1.45rem; }
+    .nav-item ::deep .nav-link { min-height: 3.4rem; }
 }

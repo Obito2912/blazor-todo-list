@@ -1,17 +1,11 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
+    <aside class="sidebar">
         <NavMenu />
-    </div>
-
+    </aside>
     <main>
-        <div class="top-row px-4">
-            <span class="top-row__message">Make today count.</span>
-            <a class="btn btn-sm btn-outline-secondary" href="login">Log in</a>
-        </div>
-
-        <article class="content px-4">
+        <article class="content">
             @Body
         </article>
     </main>

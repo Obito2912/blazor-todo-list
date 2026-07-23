@@ -1,26 +1,25 @@
 @page "/tasks"
 @rendermode InteractiveServer
+@inject NavigationManager Navigation
 
-<PageTitle>Tasks | My Quest</PageTitle>
+<PageTitle>My Tasks | My Quest</PageTitle>
 
 <section class="task-page" aria-labelledby="task-list-heading">
-    <header class="task-page__header">
-        <div>
-            <h1 id="task-list-heading">My tasks</h1>
-            <p>Keep track of what matters today.</p>
-        </div>
-        <a class="btn btn-primary" href="tasks/new">Add task</a>
-    </header>
+    <h1 id="task-list-heading">My Tasks</h1>
 
     <div class="task-toolbar">
         <SearchBar @bind-Value="searchTerm" />
         <FilterDropDown @bind-Value="selectedFilter" />
+        <a class="btn-quest-primary" href="tasks/new">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"></path></svg>
+            Add Task
+        </a>
     </div>
 
     @if (IsLoading)
     {
         <div class="task-state" role="status" aria-live="polite">
-            <div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div>
+            <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
             <span>Loading tasks…</span>
         </div>
     }
@@ -29,10 +28,7 @@
         <div class="alert alert-danger" role="alert">
             <strong>Tasks could not be loaded.</strong>
             <span>@ErrorMessage</span>
-            @if (Retry.HasDelegate)
-            {
-                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="Retry">Try again</button>
-            }
+            @if (Retry.HasDelegate) { <button type="button" class="btn btn-sm btn-outline-danger" @onclick="Retry">Try again</button> }
         </div>
     }
     else if (FilteredTasks.Count == 0)
@@ -40,14 +36,7 @@
         <div class="task-state task-state--empty">
             <h2>@EmptyStateTitle</h2>
             <p>@EmptyStateMessage</p>
-            @if (Tasks.Count == 0)
-            {
-                <a class="btn btn-primary" href="tasks/new">Create your first task</a>
-            }
-            else
-            {
-                <button type="button" class="btn btn-outline-secondary" @onclick="ClearFilters">Clear filters</button>
-            }
+            <button type="button" class="btn btn-outline-secondary" @onclick="ClearFilters">Clear filters</button>
         </div>
     }
     else
@@ -60,9 +49,9 @@
                           Description="@task.Description"
                           IsCompleted="@task.IsCompleted"
                           DueDate="@task.DueDate"
-                          CompletionChanged="completed => CompletionChanged.InvokeAsync((task.Id, completed))"
-                          OnEdit="() => EditRequested.InvokeAsync(task.Id)"
-                          OnDelete="() => DeleteRequested.InvokeAsync(task.Id)" />
+                          CompletionChanged="completed => SetCompletion(task.Id, completed)"
+                          OnEdit="() => EditTask(task.Id)"
+                          OnDelete="() => DeleteTask(task.Id)" />
             }
         </div>
     }
@@ -72,7 +61,15 @@
     private string searchTerm = string.Empty;
     private TaskFilter selectedFilter = TaskFilter.All;
 
-    [Parameter] public IReadOnlyList<TaskListItem> Tasks { get; set; } = [];
+    [Parameter] public IReadOnlyList<TaskListItem> Tasks { get; set; } =
+    [
+        new(1, "Study for Calculus Exam", "Review chapters 5–8 and practice past exam questions.", false, new DateTime(2025, 5, 24)),
+        new(2, "Write English Essay", "Complete the final draft for the literature analysis essay.", false, new DateTime(2025, 5, 26)),
+        new(3, "Biology Lab Report", "Analyze results and write up the lab report.", false, new DateTime(2025, 5, 28)),
+        new(4, "Group Project Meeting", "Discuss progress and assign tasks for the presentation.", false, new DateTime(2025, 5, 30)),
+        new(5, "Workout Routine", "Plan 4 workouts for the week and track progress.", false, new DateTime(2025, 5, 31))
+    ];
+
     [Parameter] public bool IsLoading { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
     [Parameter] public EventCallback Retry { get; set; }
@@ -82,7 +79,8 @@
 
     private IReadOnlyList<TaskListItem> FilteredTasks => Tasks
         .Where(task => string.IsNullOrWhiteSpace(searchTerm)
-            || task.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+            || task.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+            || (task.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
         .Where(task => selectedFilter switch
         {
             TaskFilter.Completed => task.IsCompleted,
@@ -91,10 +89,22 @@
         })
         .ToList();
 
-    private string EmptyStateTitle => Tasks.Count == 0 ? "No tasks yet" : "No matching tasks";
-    private string EmptyStateMessage => Tasks.Count == 0
-        ? "Create a task and take the first step toward completing your quest."
-        : "Try another search or status filter.";
+    private string EmptyStateTitle => "No matching tasks";
+    private string EmptyStateMessage => "Try another search or status filter.";
+
+    private async Task SetCompletion(int id, bool completed)
+    {
+        Tasks = Tasks.Select(task => task.Id == id ? task with { IsCompleted = completed } : task).ToList();
+        if (CompletionChanged.HasDelegate) await CompletionChanged.InvokeAsync((id, completed));
+    }
+
+    private async Task DeleteTask(int id)
+    {
+        Tasks = Tasks.Where(task => task.Id != id).ToList();
+        if (DeleteRequested.HasDelegate) await DeleteRequested.InvokeAsync(id);
+    }
+
+    private void EditTask(int id) => Navigation.NavigateTo($"tasks/new?edit={id}");
 
     private void ClearFilters()
     {

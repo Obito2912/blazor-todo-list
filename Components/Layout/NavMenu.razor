@@ -1,36 +1,45 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href=""><span aria-hidden="true">✓</span> My Quest</a>
-    </div>
+<div class="brand-row">
+    <a class="brand" href="" aria-label="My Quest home">
+        <span class="brand__mark" aria-hidden="true">★</span>
+        <span><strong>My Quest</strong><small>Plan. Focus. Achieve.</small></span>
+    </a>
+    <input id="quest-nav-toggle" type="checkbox" title="Navigation menu" class="navbar-toggler" />
+    <label class="navbar-toggler-label" for="quest-nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+    </label>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+<div class="nav-scrollable">
     <nav class="nav flex-column">
-        <div class="nav-item px-3">
+        <div class="nav-item">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                Home
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 14a8 8 0 1 1 16 0"></path><path d="M12 14l4-5"></path><path d="M5 18h14"></path></svg>
+                Dashboard
             </NavLink>
         </div>
-
-        <div class="nav-item px-3">
+        <div class="nav-item">
             <NavLink class="nav-link" href="tasks">
-                My tasks
+                <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V2m6 2V2M9 9h6m-6 4h6m-6 4h4"></path></svg>
+                My Tasks
             </NavLink>
         </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="tasks/new">
-                Add task
+        <div class="nav-item">
+            <NavLink class="nav-link" href="tasks?filter=completed">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16 9"></path></svg>
+                Completed
             </NavLink>
         </div>
-
-        <div class="nav-item px-3">
+        <div class="nav-item">
             <NavLink class="nav-link" href="profile">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"></circle><path d="M6 21v-2a6 6 0 0 1 12 0v2"></path></svg>
                 Profile
             </NavLink>
         </div>
     </nav>
 </div>
 
+<div class="profile-card">
+    <span class="avatar">AR<i aria-hidden="true"></i></span>
+    <span class="profile-card__copy"><strong>Ava Richardson</strong><small>ava.richardson@email.com</small></span>
+    <svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 7 5 5 5-5"></path></svg>
+</div>

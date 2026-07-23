@@ -1,8 +1,29 @@
+:root {
+    --quest-purple-950: #211560;
+    --quest-purple-900: #302174;
+    --quest-purple-800: #43308a;
+    --quest-purple-500: #8f63dc;
+    --quest-purple-100: #eee8fb;
+    --quest-coral: #ff5b54;
+    --quest-canvas: #faf8f3;
+    --quest-surface: #fff;
+    --quest-text: #211665;
+    --quest-muted: #626783;
+    --quest-border: #e8e3df;
+    --quest-shadow: 0 10px 26px rgba(55, 39, 92, .07);
+}
+
 html, body {
     min-height: 100%;
-    background: #f7f9fc;
-    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0;
+    color: var(--quest-text);
+    background: var(--quest-canvas);
+    font-family: "Segoe UI", Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
 }
+
+* { box-sizing: border-box; }
+button, input { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
 
 a, .btn-link {
     color: #006bb7;
@@ -10,16 +31,12 @@ a, .btn-link {
 
 .btn-primary {
     color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background-color: var(--quest-coral);
+    border-color: var(--quest-coral);
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-.content {
-    padding-top: 1.1rem;
 }
 
 h1:focus {
@@ -67,11 +84,48 @@ h1:focus {
 }
 
 .btn-primary {
-    background-color: #2563eb;
-    border-color: #2563eb;
+    background-color: var(--quest-coral);
+    border-color: var(--quest-coral);
 }
 
 .btn-primary:hover {
-    background-color: #1d4ed8;
-    border-color: #1d4ed8;
+    background-color: #ef4b45;
+    border-color: #ef4b45;
+}
+
+.btn-quest-primary {
+    display: inline-flex;
+    min-height: 4.25rem;
+    gap: .75rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2rem;
+    color: #fff;
+    background: linear-gradient(135deg, #ff655e, var(--quest-coral));
+    border: 0;
+    border-radius: 1.75rem;
+    box-shadow: 0 .5rem 1.2rem rgba(255, 91, 84, .22);
+    font-size: 1.05rem;
+    font-weight: 650;
+    text-decoration: none;
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.btn-quest-primary:hover {
+    color: #fff;
+    box-shadow: 0 .7rem 1.5rem rgba(255, 91, 84, .3);
+    transform: translateY(-1px);
+}
+
+.btn-quest-primary:focus-visible {
+    outline: 3px solid rgba(255, 91, 84, .26);
+    outline-offset: 3px;
+}
+
+.btn-quest-primary svg {
+    width: 1.55rem;
+    height: 1.55rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
 }
