@@ -1,0 +1,12 @@
+bin/
+obj/
+**/bin/
+**/obj/
+.vs/
+.vscode/
+*.db
+*.db-shm
+*.db-wal
+Tests/
+design-samples/
+README.md

@@ -1,0 +1,64 @@
+@page "/tasks/new"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+<PageTitle>New task | My Quest</PageTitle>
+
+<section class="task-form-page" aria-labelledby="task-form-heading">
+    <a class="back-link" href="tasks">← Back to tasks</a>
+    <header>
+        <h1 id="task-form-heading">Create a task</h1>
+        <p>Add the details now. You can update them later.</p>
+    </header>
+
+    <EditForm Model="FormValue" OnValidSubmit="HandleValidSubmit" FormName="task-form">
+        <DataAnnotationsValidator />
+
+        <div class="mb-4">
+            <label class="form-label" for="task-title">Title</label>
+            <InputText id="task-title" class="form-control" @bind-Value="FormValue.Title" maxlength="120" />
+            <ValidationMessage For="() => FormValue.Title" />
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label" for="task-description">Description <span>(optional)</span></label>
+            <InputTextArea id="task-description" class="form-control" @bind-Value="FormValue.Description" rows="5" maxlength="1000" />
+            <ValidationMessage For="() => FormValue.Description" />
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label" for="task-due-date">Due date <span>(optional)</span></label>
+            <InputDate id="task-due-date" class="form-control" @bind-Value="FormValue.DueDate" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+        </div>
+
+        @if (showIntegrationNotice)
+        {
+            <div class="alert alert-info" role="status">
+                The form is valid. Saving will be connected when the task service is ready.
+            </div>
+        }
+
+        <div class="form-actions">
+            <a class="btn btn-outline-secondary" href="tasks">Cancel</a>
+            <button class="btn btn-primary" type="submit">Save task</button>
+        </div>
+    </EditForm>
+</section>
+
+@code {
+    private bool showIntegrationNotice;
+
+    [Parameter] public TaskFormValue FormValue { get; set; } = new();
+    [Parameter] public EventCallback<TaskFormValue> ValidSubmit { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        if (ValidSubmit.HasDelegate)
+        {
+            await ValidSubmit.InvokeAsync(FormValue);
+            return;
+        }
+
+        showIntegrationNotice = true;
+    }
+}

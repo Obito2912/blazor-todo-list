@@ -1,0 +1,178 @@
+@page "/profile"
+@attribute [Authorize]
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using blazor_todo_list.Data
+@using blazor_todo_list.Services
+
+@inject IAccountService AccountService
+@inject IdentityUserAccessor UserAccessor
+
+<PageTitle>My Profile | My Quest</PageTitle>
+
+<section class="auth-page">
+    <div class="auth-card">
+        <div class="auth-card__intro">
+            <span class="auth-card__mark" aria-hidden="true">★</span>
+            <h1>My Profile</h1>
+            <p>Update your details or change your password.</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert @(hasError ? "alert-danger" : "alert-success") auth-alert" role="alert">@statusMessage</div>
+        }
+
+        <div class="auth-panel mb-4">
+            <h2 class="h5 mb-3">Account details</h2>
+            <EditForm Model="ProfileInput" FormName="profile" OnValidSubmit="HandleProfileUpdate" method="post">
+                <DataAnnotationsValidator />
+
+                <div class="auth-field">
+                    <label for="full-name">Full Name</label>
+                    <InputText id="full-name" class="form-control" @bind-Value="ProfileInput.FullName" autocomplete="name" />
+                    <ValidationMessage For="() => ProfileInput.FullName" />
+                </div>
+
+                <div class="auth-field">
+                    <label for="email">Email Address</label>
+                    <input id="email" class="form-control" value="@email" disabled />
+                    <small class="text-muted">Contact an administrator to change your email address.</small>
+                </div>
+
+                <p class="auth-field-label">I AM A...</p>
+                <InputRadioGroup @bind-Value="ProfileInput.Role" class="auth-role-group">
+                    <label class="auth-role-option">
+                        <InputRadio TValue="AccountRole" Value="AccountRole.Student" />
+                        <span class="auth-role-option__card">
+                            <span class="auth-role-option__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5Z"></path><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"></path></svg>
+                            </span>
+                            <span><strong>Student</strong></span>
+                        </span>
+                    </label>
+                    <label class="auth-role-option">
+                        <InputRadio TValue="AccountRole" Value="AccountRole.Teacher" />
+                        <span class="auth-role-option__card">
+                            <span class="auth-role-option__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"></path></svg>
+                            </span>
+                            <span><strong>Teacher</strong></span>
+                        </span>
+                    </label>
+                </InputRadioGroup>
+
+                <button type="submit" class="btn btn-quest-primary auth-submit">Save changes</button>
+            </EditForm>
+        </div>
+
+        <div class="auth-panel">
+            <h2 class="h5 mb-3">Change password</h2>
+            <EditForm Model="PasswordInput" FormName="change-password" OnValidSubmit="HandlePasswordChange" method="post">
+                <DataAnnotationsValidator />
+
+                <div class="auth-field">
+                    <label for="current-password">Current Password</label>
+                    <InputText id="current-password" type="password" class="form-control" @bind-Value="PasswordInput.CurrentPassword" autocomplete="current-password" />
+                    <ValidationMessage For="() => PasswordInput.CurrentPassword" />
+                </div>
+
+                <div class="auth-field">
+                    <label for="new-password">New Password</label>
+                    <InputText id="new-password" type="password" class="form-control" @bind-Value="PasswordInput.NewPassword" placeholder="Min. 6 characters" autocomplete="new-password" />
+                    <ValidationMessage For="() => PasswordInput.NewPassword" />
+                </div>
+
+                <div class="auth-field">
+                    <label for="confirm-new-password">Confirm New Password</label>
+                    <InputText id="confirm-new-password" type="password" class="form-control" @bind-Value="PasswordInput.ConfirmNewPassword" autocomplete="new-password" />
+                    <ValidationMessage For="() => PasswordInput.ConfirmNewPassword" />
+                </div>
+
+                <button type="submit" class="btn btn-outline-secondary auth-submit">Update password</button>
+            </EditForm>
+        </div>
+    </div>
+</section>
+
+@code {
+    private string email = string.Empty;
+    private string? statusMessage;
+    private bool hasError;
+    private ApplicationUser user = default!;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm(FormName = "profile")]
+    private ProfileFormModel ProfileInput { get; set; } = default!;
+
+    [SupplyParameterFromForm(FormName = "change-password")]
+    private PasswordFormModel PasswordInput { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        ProfileInput ??= new();
+        PasswordInput ??= new();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        email = user.Email ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(ProfileInput.FullName))
+        {
+            ProfileInput.FullName = user.FullName;
+            ProfileInput.Role = user.Role;
+        }
+    }
+
+    private async Task HandleProfileUpdate()
+    {
+        var result = await AccountService.UpdateProfileAsync(user, new ProfileUpdateRequest(ProfileInput.FullName.Trim(), ProfileInput.Role));
+
+        hasError = !result.Succeeded;
+        statusMessage = result.Succeeded
+            ? "Your profile has been updated."
+            : string.Join(" ", result.Errors.Select(e => e.Description));
+    }
+
+    private async Task HandlePasswordChange()
+    {
+        var result = await AccountService.ChangePasswordAsync(user, PasswordInput.CurrentPassword, PasswordInput.NewPassword);
+
+        hasError = !result.Succeeded;
+        statusMessage = result.Succeeded
+            ? "Your password has been changed."
+            : string.Join(" ", result.Errors.Select(e => e.Description));
+
+        if (result.Succeeded)
+        {
+            PasswordInput = new PasswordFormModel();
+        }
+    }
+
+    private sealed class ProfileFormModel
+    {
+        [Required(ErrorMessage = "Enter your full name.")]
+        [StringLength(120)]
+        public string FullName { get; set; } = string.Empty;
+
+        public AccountRole Role { get; set; } = AccountRole.Student;
+    }
+
+    private sealed class PasswordFormModel
+    {
+        [Required(ErrorMessage = "Enter your current password.")]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Enter a new password.")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters.")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Confirm your new password.")]
+        [Compare(nameof(NewPassword), ErrorMessage = "Passwords do not match.")]
+        public string ConfirmNewPassword { get; set; } = string.Empty;
+    }
+}

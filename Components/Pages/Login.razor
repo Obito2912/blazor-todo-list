@@ -1,0 +1,111 @@
+@page "/login"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using blazor_todo_list.Services
+
+@inject IAccountService AccountService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Sign In | My Quest</PageTitle>
+
+<section class="auth-page">
+    <div class="auth-card">
+        <div class="auth-card__intro">
+            <span class="auth-card__mark" aria-hidden="true">★</span>
+            <h1>Welcome back.</h1>
+            <p>Continue your quest.</p>
+        </div>
+
+        <div class="auth-tabs">
+            <a href="login" class="active" aria-current="page">Sign In</a>
+            <a href="register">Create Account</a>
+        </div>
+
+        <div class="auth-panel">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger auth-alert" role="alert">@errorMessage</div>
+            }
+
+            <EditForm Model="Input" FormName="login" OnValidSubmit="HandleLogin" method="post">
+                <DataAnnotationsValidator />
+
+                <div class="auth-field">
+                    <label for="email">Email Address</label>
+                    <InputText id="email" class="form-control" @bind-Value="Input.Email" placeholder="student@example.com" autocomplete="username" />
+                    <ValidationMessage For="() => Input.Email" />
+                </div>
+
+                <div class="auth-inline-link">
+                    <a href="forgot-password">Forgot password?</a>
+                </div>
+
+                <div class="auth-field">
+                    <label for="password">Password</label>
+                    <div class="auth-field-row">
+                        <InputText id="password" type="@(showPassword ? "text" : "password")" class="form-control" @bind-Value="Input.Password" placeholder="Enter your password" autocomplete="current-password" />
+                        <button type="button" class="auth-toggle-visibility" aria-label="@(showPassword ? "Hide password" : "Show password")" @onclick="() => showPassword = !showPassword">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                    </div>
+                    <ValidationMessage For="() => Input.Password" />
+                </div>
+
+                <div class="form-check mb-3">
+                    <InputCheckbox id="remember-me" class="form-check-input" @bind-Value="Input.RememberMe" />
+                    <label class="form-check-label" for="remember-me">Keep me signed in</label>
+                </div>
+
+                <button type="submit" class="btn btn-quest-primary auth-submit">Sign In</button>
+            </EditForm>
+        </div>
+
+        <p class="auth-footnote">New to My Quest? <a href="register">Create Account</a></p>
+    </div>
+</section>
+
+@code {
+    private string? errorMessage;
+    private bool showPassword;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private LoginFormModel Input { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Input ??= new();
+    }
+
+    private async Task HandleLogin()
+    {
+        var result = await AccountService.LoginAsync(Input.Email.Trim(), Input.Password, Input.RememberMe);
+
+        if (result.Succeeded)
+        {
+            NavigationManager.NavigateTo(ReturnUrl ?? "tasks");
+            return;
+        }
+
+        errorMessage = result.IsLockedOut
+            ? "This account is temporarily locked due to multiple failed attempts. Try again shortly."
+            : "Invalid email or password.";
+    }
+
+    private sealed class LoginFormModel
+    {
+        [Required(ErrorMessage = "Enter your email address.")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Enter your password.")]
+        public string Password { get; set; } = string.Empty;
+
+        public bool RememberMe { get; set; }
+    }
+}

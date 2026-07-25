@@ -1,0 +1,14 @@
+.home-intro { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(18rem, .8fr); gap: clamp(2rem, 7vw, 6rem); align-items: center; width: min(100%, 66rem); min-height: calc(100vh - 11rem); margin: 0 auto; }
+.home-intro h1 { max-width: 12ch; margin: 0; color: #172033; font-size: clamp(2.6rem, 7vw, 5rem); font-weight: 750; letter-spacing: -.055em; line-height: .98; }
+.home-intro p { max-width: 36rem; margin: 1.5rem 0 0; color: #64748b; font-size: 1.1rem; line-height: 1.7; }
+.home-intro__actions { display: flex; gap: .75rem; margin-top: 2rem; }
+.home-intro__panel { padding: clamp(1.4rem, 4vw, 2.25rem); background: #fff; border: 1px solid #e2e8f0; border-radius: 1.25rem; box-shadow: 0 1.25rem 3rem rgba(36, 50, 75, .08); }
+.home-intro__panel h2 { margin: 0 0 1.5rem; color: #172033; font-size: 1.15rem; }
+.home-intro__panel ol { display: grid; gap: 1.35rem; padding: 0; margin: 0; list-style: none; }
+.home-intro__panel li { display: flex; gap: 1rem; align-items: flex-start; }
+.home-intro__panel li > span { display: grid; flex: 0 0 2rem; width: 2rem; height: 2rem; place-items: center; color: #fff; background: #2563eb; border-radius: 50%; font-size: .85rem; font-weight: 700; }
+.home-intro__panel strong, .home-intro__panel small { display: block; }
+.home-intro__panel strong { color: #263247; }
+.home-intro__panel small { margin-top: .2rem; color: #718096; line-height: 1.5; }
+@media (max-width: 800px) { .home-intro { grid-template-columns: 1fr; min-height: auto; padding: 2rem 0; } }
+@media (max-width: 575.98px) { .home-intro__actions { align-items: stretch; flex-direction: column; } }

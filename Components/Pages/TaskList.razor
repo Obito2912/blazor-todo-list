@@ -1,0 +1,115 @@
+@page "/tasks"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+
+<PageTitle>My Tasks | My Quest</PageTitle>
+
+<section class="task-page" aria-labelledby="task-list-heading">
+    <h1 id="task-list-heading">My Tasks</h1>
+
+    <div class="task-toolbar">
+        <SearchBar @bind-Value="searchTerm" />
+        <FilterDropDown @bind-Value="selectedFilter" />
+        <a class="btn-quest-primary" href="tasks/new">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"></path></svg>
+            Add Task
+        </a>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="task-state" role="status" aria-live="polite">
+            <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
+            <span>Loading tasks…</span>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            <strong>Tasks could not be loaded.</strong>
+            <span>@ErrorMessage</span>
+            @if (Retry.HasDelegate) { <button type="button" class="btn btn-sm btn-outline-danger" @onclick="Retry">Try again</button> }
+        </div>
+    }
+    else if (FilteredTasks.Count == 0)
+    {
+        <div class="task-state task-state--empty">
+            <h2>@EmptyStateTitle</h2>
+            <p>@EmptyStateMessage</p>
+            <button type="button" class="btn btn-outline-secondary" @onclick="ClearFilters">Clear filters</button>
+        </div>
+    }
+    else
+    {
+        <div class="task-list" aria-live="polite">
+            @foreach (var task in FilteredTasks)
+            {
+                <TaskCard @key="task.Id"
+                          Title="@task.Title"
+                          Description="@task.Description"
+                          IsCompleted="@task.IsCompleted"
+                          DueDate="@task.DueDate"
+                          CompletionChanged="completed => SetCompletion(task.Id, completed)"
+                          OnEdit="() => EditTask(task.Id)"
+                          OnDelete="() => DeleteTask(task.Id)" />
+            }
+        </div>
+    }
+</section>
+
+@code {
+    private string searchTerm = string.Empty;
+    private TaskFilter selectedFilter = TaskFilter.All;
+
+    [Parameter] public IReadOnlyList<TaskListItem> Tasks { get; set; } =
+    [
+        new(1, "Study for Calculus Exam", "Review chapters 5–8 and practice past exam questions.", false, new DateTime(2025, 5, 24)),
+        new(2, "Write English Essay", "Complete the final draft for the literature analysis essay.", false, new DateTime(2025, 5, 26)),
+        new(3, "Biology Lab Report", "Analyze results and write up the lab report.", false, new DateTime(2025, 5, 28)),
+        new(4, "Group Project Meeting", "Discuss progress and assign tasks for the presentation.", false, new DateTime(2025, 5, 30)),
+        new(5, "Workout Routine", "Plan 4 workouts for the week and track progress.", false, new DateTime(2025, 5, 31))
+    ];
+
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public EventCallback Retry { get; set; }
+    [Parameter] public EventCallback<int> EditRequested { get; set; }
+    [Parameter] public EventCallback<int> DeleteRequested { get; set; }
+    [Parameter] public EventCallback<(int Id, bool IsCompleted)> CompletionChanged { get; set; }
+
+    private IReadOnlyList<TaskListItem> FilteredTasks => Tasks
+        .Where(task => string.IsNullOrWhiteSpace(searchTerm)
+            || task.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+            || (task.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
+        .Where(task => selectedFilter switch
+        {
+            TaskFilter.Completed => task.IsCompleted,
+            TaskFilter.Pending => !task.IsCompleted,
+            _ => true
+        })
+        .ToList();
+
+    private string EmptyStateTitle => "No matching tasks";
+    private string EmptyStateMessage => "Try another search or status filter.";
+
+    private async Task SetCompletion(int id, bool completed)
+    {
+        Tasks = Tasks.Select(task => task.Id == id ? task with { IsCompleted = completed } : task).ToList();
+        if (CompletionChanged.HasDelegate) await CompletionChanged.InvokeAsync((id, completed));
+    }
+
+    private async Task DeleteTask(int id)
+    {
+        Tasks = Tasks.Where(task => task.Id != id).ToList();
+        if (DeleteRequested.HasDelegate) await DeleteRequested.InvokeAsync(id);
+    }
+
+    private void EditTask(int id) => Navigation.NavigateTo($"tasks/new?edit={id}");
+
+    private void ClearFilters()
+    {
+        searchTerm = string.Empty;
+        selectedFilter = TaskFilter.All;
+    }
+}

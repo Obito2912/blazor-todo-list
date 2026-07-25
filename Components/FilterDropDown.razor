@@ -1,0 +1,19 @@
+<div id="@InputId" class="task-filter" role="group" aria-label="Filter tasks by status">
+    @foreach (var filter in Enum.GetValues<TaskFilter>())
+    {
+        <button type="button"
+                class="@(Value == filter ? "is-active" : null)"
+                aria-pressed="@(Value == filter)"
+                @onclick="() => SelectFilter(filter)">
+            @filter
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public TaskFilter Value { get; set; } = TaskFilter.All;
+    [Parameter] public EventCallback<TaskFilter> ValueChanged { get; set; }
+    [Parameter] public string InputId { get; set; } = "task-filter";
+
+    private Task SelectFilter(TaskFilter filter) => ValueChanged.InvokeAsync(filter);
+}

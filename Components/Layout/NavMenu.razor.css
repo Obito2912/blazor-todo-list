@@ -1,0 +1,48 @@
+.navbar-toggler { position: absolute; opacity: 0; pointer-events: none; }
+.brand-row { padding: 3.4rem 2.5rem 2rem; }
+.brand { display: flex; gap: 1rem; align-items: center; color: #fff; text-decoration: none; }
+.brand__mark { color: #ffc84d; font-size: 3.2rem; filter: drop-shadow(0 .2rem .15rem rgba(30, 18, 83, .24)); line-height: 1; }
+.brand strong, .brand small { display: block; }
+.brand strong { font-size: 2rem; letter-spacing: -.03em; }
+.brand small { margin-top: .25rem; color: #d2c5f2; font-size: 1rem; }
+.nav { gap: .55rem; padding: 1.6rem 1.45rem; }
+.nav-item { font-size: 1.05rem; }
+.nav-item ::deep .nav-link {
+    display: flex; min-height: 4.5rem; gap: 1.2rem; align-items: center; padding: 0 1.25rem;
+    color: #fff; border-radius: 1.3rem; font-weight: 600;
+}
+.nav-item ::deep a.active { color: #fff; background: linear-gradient(135deg, rgba(178,132,239,.78), rgba(145,98,220,.82)); }
+.nav-item ::deep .nav-link:hover { color: #fff; background-color: rgba(255,255,255,.1); }
+.nav-item ::deep svg {
+    width: 1.75rem; height: 1.75rem; fill: none; stroke: currentColor; stroke-linecap: round;
+    stroke-linejoin: round; stroke-width: 1.7;
+}
+.profile-card {
+    position: absolute; right: 1.45rem; bottom: 2rem; left: 1.45rem; display: grid;
+    grid-template-columns: auto 1fr auto; gap: .75rem; align-items: center; padding: 1rem; color: #fff;
+    background: rgba(52,34,116,.48); border: 1px solid rgba(255,255,255,.1); border-radius: 1.2rem;
+    text-decoration: none;
+}
+.profile-card:hover { color: #fff; background: rgba(52,34,116,.65); }
+.avatar { position: relative; display: grid; width: 3.2rem; height: 3.2rem; place-items: center; background: #8f63dc; border-radius: 50%; font-weight: 650; }
+.avatar i { position: absolute; right: -.05rem; bottom: .1rem; width: .8rem; height: .8rem; background: #35d2a1; border-radius: 50%; }
+.profile-card__copy { min-width: 0; }
+.profile-card strong, .profile-card small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-card strong { font-size: .88rem; }
+.profile-card small { margin-top: .15rem; color: #d5c9ef; font-size: .68rem; }
+.profile-card > svg { width: 1.15rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 2; }
+.navbar-toggler-label { display: none; }
+
+@media (max-width: 640.98px) {
+    .brand-row { display: flex; align-items: center; justify-content: space-between; min-height: 5.4rem; padding: 1rem 1.25rem; }
+    .brand { gap: .65rem; }
+    .brand__mark { font-size: 2.1rem; }
+    .brand strong { font-size: 1.55rem; }
+    .brand small, .profile-card { display: none; }
+    .navbar-toggler-label { display: grid; width: 2.75rem; height: 2.75rem; cursor: pointer; place-content: center; gap: .3rem; }
+    .navbar-toggler-label span { display: block; width: 1.75rem; height: .18rem; background: #fff; border-radius: 1rem; }
+    .nav-scrollable { display: none; padding-bottom: 1rem; }
+    .brand-row:has(.navbar-toggler:checked) + .nav-scrollable { display: block; }
+    .nav { padding: 0 1.45rem; }
+    .nav-item ::deep .nav-link { min-height: 3.4rem; }
+}

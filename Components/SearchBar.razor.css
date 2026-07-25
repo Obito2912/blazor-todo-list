@@ -1,0 +1,16 @@
+.search-field { position: relative; width: 100%; min-width: 15rem; }
+.search-field svg {
+    position: absolute; top: 50%; left: 1.4rem; width: 1.45rem; height: 1.45rem; fill: none;
+    stroke: #666981; stroke-linecap: round; stroke-width: 1.8; transform: translateY(-50%); pointer-events: none;
+}
+.search-field .form-control {
+    min-height: 4.1rem; padding: 0 1.25rem 0 4rem; color: var(--quest-text); background: #fff;
+    border: 1px solid var(--quest-border); border-radius: 1rem; box-shadow: 0 4px 12px rgba(55,39,92,.04); font-size: 1rem;
+}
+.search-field .form-control::placeholder { color: #9a99aa; }
+.search-field .form-control:focus { border-color: #a67ce1; box-shadow: 0 0 0 4px rgba(143,99,220,.12); }
+
+@media (max-width: 640.98px) {
+    .search-field svg { left: 1.05rem; width: 1.25rem; height: 1.25rem; }
+    .search-field .form-control { min-height: 3.2rem; padding-left: 3.15rem; border-radius: .85rem; font-size: .92rem; }
+}
