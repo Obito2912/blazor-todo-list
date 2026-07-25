@@ -1,0 +1,74 @@
+<article class="task-card task-card--@Category @(IsCompleted ? "task-card--completed" : null)">
+    <div class="task-card__symbol" aria-hidden="true">
+        @if (Category == "study")
+        {
+            <svg viewBox="0 0 24 24"><path d="M3 5.5a6 6 0 0 1 9 1.5 6 6 0 0 1 9-1.5v13a6 6 0 0 0-9 1.5 6 6 0 0 0-9-1.5z"></path><path d="M12 7v13"></path></svg>
+        }
+        else if (Category == "writing")
+        {
+            <svg viewBox="0 0 24 24"><path d="M6 2h8l4 4v16H6z"></path><path d="M14 2v5h4M9 12h6m-6 4h6"></path></svg>
+        }
+        else if (Category == "science")
+        {
+            <svg viewBox="0 0 24 24"><path d="M9 2h6m-5 0v7l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V2"></path><path d="M8 15h8"></path></svg>
+        }
+        else if (Category == "group")
+        {
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M3 21v-2a6 6 0 0 1 12 0v2m1-7a5 5 0 0 1 5 5v2"></path></svg>
+        }
+        else
+        {
+            <svg viewBox="0 0 24 24"><path d="M3 9v6m3-9v12m3-8v4m6-4v4m3-8v12m3-9v6M9 12h6M3 12h3m12 0h3"></path></svg>
+        }
+    </div>
+
+    <input class="task-toggle"
+           type="checkbox"
+           checked="@IsCompleted"
+           aria-label="Mark @Title as @(IsCompleted ? "pending" : "completed")"
+           @onchange="HandleCompletionChange" />
+
+    <div class="task-card__content">
+        <h2>@Title</h2>
+        @if (!string.IsNullOrWhiteSpace(Description)) { <p>@Description</p> }
+    </div>
+
+    @if (DueDate is not null)
+    {
+        <div class="task-card__date">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4m8-4v4M3 10h18m-13 4h2m4 0h2"></path></svg>
+            <time datetime="@DueDate.Value.ToString("yyyy-MM-dd")"><span>@DueDate.Value.ToString("MMM d, yyyy")</span><small>@DueDate.Value.ToString("ddd")</small></time>
+        </div>
+    }
+
+    <div class="task-card__actions" aria-label="Actions for @Title">
+        <button type="button" class="task-action task-action--edit" aria-label="Edit @Title" @onclick="OnEdit">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10a2 2 0 0 0-3.5-3.5l-10 10z"></path><path d="m13.5 7 3.5 3.5"></path></svg>
+        </button>
+        <button type="button" class="task-action task-action--delete" aria-label="Delete @Title" @onclick="OnDelete">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16m-10 4v6m4-6v6M8 7l1-3h6l1 3m2 0-1 14H7L6 7"></path></svg>
+        </button>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public bool IsCompleted { get; set; }
+    [Parameter] public DateTime? DueDate { get; set; }
+    [Parameter] public EventCallback<bool> CompletionChanged { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+
+    private string Category => Title switch
+    {
+        var title when title.Contains("Calculus", StringComparison.OrdinalIgnoreCase) => "study",
+        var title when title.Contains("Essay", StringComparison.OrdinalIgnoreCase) => "writing",
+        var title when title.Contains("Biology", StringComparison.OrdinalIgnoreCase) => "science",
+        var title when title.Contains("Group", StringComparison.OrdinalIgnoreCase) => "group",
+        _ => "fitness"
+    };
+
+    private Task HandleCompletionChange(ChangeEventArgs args) =>
+        CompletionChanged.InvokeAsync(args.Value is true || args.Value?.ToString() == "true");
+}

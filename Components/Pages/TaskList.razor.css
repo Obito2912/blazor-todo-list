@@ -1,0 +1,30 @@
+.task-page { width: 100%; max-width: 88rem; margin: 0 auto; }
+.task-page h1 { margin: 0; color: var(--quest-text); font-size: clamp(2.4rem,4vw,3.15rem); font-weight: 750; letter-spacing: -.045em; }
+.task-toolbar {
+    display: grid; grid-template-columns: minmax(16rem,1fr) auto auto; gap: 2.35rem; align-items: center;
+    margin: 1.65rem 0 1.9rem;
+}
+.task-list { display: grid; gap: .75rem; }
+.task-state { display: flex; min-height: 15rem; gap: .75rem; align-items: center; justify-content: center; color: var(--quest-muted); }
+.task-state--empty { flex-direction: column; padding: 3rem 1rem; text-align: center; background: #fff; border: 1px dashed #cfc5dc; border-radius: 1rem; }
+.task-state--empty h2 { margin: 0; color: var(--quest-text); font-size: 1.2rem; }
+.task-state--empty p { margin: 0 0 .5rem; }
+.alert { display: flex; gap: .75rem; align-items: center; }
+
+@media (max-width: 1180px) {
+    .task-toolbar { grid-template-columns: minmax(14rem,1fr) auto; gap: 1rem; }
+    .task-toolbar ::deep .btn-quest-primary { grid-column: 1 / -1; justify-self: end; min-height: 3.6rem; }
+}
+
+@media (max-width: 640.98px) {
+    .task-page h1 { font-size: 1.9rem; }
+    .task-toolbar { display: flex; gap: .85rem; flex-direction: column; margin: 1rem 0 1.15rem; }
+    .task-toolbar > * { width: 100%; }
+    .task-toolbar ::deep .btn-quest-primary { order: -1; width: 100%; min-height: 3.3rem; border-radius: .9rem; font-size: .98rem; }
+    .task-list { gap: .65rem; }
+    .alert { align-items: flex-start; flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .task-toolbar ::deep .btn-quest-primary { transition: none; }
+}

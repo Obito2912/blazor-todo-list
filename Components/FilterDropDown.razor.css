@@ -1,0 +1,35 @@
+.task-filter {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    min-width: 24rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--quest-border);
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(55,39,92,.04);
+}
+
+.task-filter button {
+    min-height: 4.1rem;
+    padding: 0 1.25rem;
+    color: var(--quest-text);
+    background: transparent;
+    border: 0;
+    border-right: 1px solid var(--quest-border);
+    font-weight: 600;
+}
+
+.task-filter button:last-child { border-right: 0; }
+.task-filter button:hover:not(.is-active) { background: #faf8ff; }
+.task-filter button.is-active { color: #fff; background: linear-gradient(135deg, #9c70e6, #8457d0); }
+.task-filter button:focus-visible { position: relative; z-index: 1; outline: 3px solid rgba(143,99,220,.3); outline-offset: -3px; }
+
+@media (max-width: 1100px) {
+    .task-filter { min-width: 20rem; }
+}
+
+@media (max-width: 640.98px) {
+    .task-filter { width: 100%; min-width: 0; }
+    .task-filter { border-radius: .85rem; }
+    .task-filter button { min-height: 3.15rem; padding: 0 .45rem; font-size: .9rem; }
+}
