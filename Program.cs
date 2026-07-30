@@ -10,7 +10,14 @@ builder.Services.AddRazorComponents()
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    .AddEntityFrameworkStores<AppDbContext>();
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders(); //for password reset, email confirmation and tokens
+
+
+//Depend. injection for registering Task service file and its interface
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+
 
 var app = builder.Build();
 
@@ -22,7 +29,13 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+
 app.UseHttpsRedirection();
+
+//Fixing [Authorize] attributes on task /profile pages
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseAntiforgery();
 
