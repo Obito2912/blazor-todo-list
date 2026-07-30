@@ -44,3 +44,4 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+//Fixing [Authorize] attributes on task /profile pages
