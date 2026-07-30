@@ -7,6 +7,7 @@
     <RootNamespace>blazor_todo_list</RootNamespace>
     <AssemblyName>$(AssemblyName.Replace(' ', '_'))</AssemblyName>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+<<<<<<< HEAD
     <UserSecretsId>blazor-todo-list-myquest</UserSecretsId>
   </PropertyGroup>
 
@@ -20,4 +21,8 @@
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
   </ItemGroup>
 
+=======
+  </PropertyGroup>
+
+>>>>>>> main
 </Project>

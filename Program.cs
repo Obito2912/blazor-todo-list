@@ -1,8 +1,12 @@
+<<<<<<< HEAD
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using blazor_todo_list.Components;
 using blazor_todo_list.Data;
 using blazor_todo_list.Services;
+=======
+using blazor_todo_list.Components;
+>>>>>>> main
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+<<<<<<< HEAD
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<IdentityUserAccessor>();
@@ -50,6 +55,10 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated();
 }
 
+=======
+var app = builder.Build();
+
+>>>>>>> main
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -60,8 +69,11 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+<<<<<<< HEAD
 app.UseAuthentication();
 app.UseAuthorization();
+=======
+>>>>>>> main
 app.UseAntiforgery();
 
 app.MapStaticAssets();
