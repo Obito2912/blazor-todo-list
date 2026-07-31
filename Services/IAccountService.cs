@@ -1,10 +1,21 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 
 public interface IAccountService
 {
-    Task<IdentityResult> UpdateUsernameAsync(string userId, string newUsername);
+    Task<IdentityResult> RegisterAsync(string fullName, string email, string password, string role);
 
-    Task<IdentityResult> UpdatePasswordAsync(string userId, string currentPassword, string newPassword);
+    Task<SignInResult> LoginAsync(string email, string password, bool rememberMe);
 
-    Task<IdentityResult> UpdateProfileImageAsync(string userId, string imageUrl);
+    Task LogoutAsync();
+
+    Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal principal);
+
+    Task<IList<string>> GetRolesAsync(ApplicationUser user);
+
+    Task<IdentityResult> UpdateProfileAsync(ApplicationUser user, string fullName, string email);
+
+    Task<IdentityResult> UpdateProfileImageAsync(ApplicationUser user, string? profileImageUrl);
+
+    Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword);
 }

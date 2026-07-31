@@ -17,29 +17,75 @@
                 Dashboard
             </NavLink>
         </div>
-        <div class="nav-item">
-            <NavLink class="nav-link" href="tasks">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V2m6 2V2M9 9h6m-6 4h6m-6 4h4"></path></svg>
-                My Tasks
-            </NavLink>
-        </div>
-        <div class="nav-item">
-            <NavLink class="nav-link" href="tasks?filter=completed">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16 9"></path></svg>
-                Completed
-            </NavLink>
-        </div>
-        <div class="nav-item">
-            <NavLink class="nav-link" href="profile">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"></circle><path d="M6 21v-2a6 6 0 0 1 12 0v2"></path></svg>
-                Profile
-            </NavLink>
-        </div>
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="tasks">
+                        <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V2m6 2V2M9 9h6m-6 4h6m-6 4h4"></path></svg>
+                        My Tasks
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="tasks?filter=completed">
+                        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16 9"></path></svg>
+                        Completed
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="profile">
+                        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"></circle><path d="M6 21v-2a6 6 0 0 1 12 0v2"></path></svg>
+                        Profile
+                    </NavLink>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="login">
+                        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path></svg>
+                        Sign In
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="register">
+                        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M19 8v6M22 11h-6"></path></svg>
+                        Create Account
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
     </nav>
 </div>
 
-<div class="profile-card">
-    <span class="avatar">AR<i aria-hidden="true"></i></span>
-    <span class="profile-card__copy"><strong>Ava Richardson</strong><small>ava.richardson@email.com</small></span>
-    <svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 7 5 5 5-5"></path></svg>
-</div>
+<AuthorizeView>
+    <Authorized>
+        <div class="profile-card">
+            <a class="profile-card__link" href="profile" aria-label="View profile for @DisplayName(context.User)">
+                <span class="avatar">@Initials(context.User)<i aria-hidden="true"></i></span>
+                <span class="profile-card__copy"><strong>@DisplayName(context.User)</strong><small>@(context.User.Identity?.Name)</small></span>
+            </a>
+            <a href="logout" class="profile-card__logout" title="Sign out" aria-label="Sign out">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><path d="M10 17l-5-5 5-5"></path><path d="M15 12H3"></path></svg>
+            </a>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private static string DisplayName(System.Security.Claims.ClaimsPrincipal user)
+    {
+        var fullName = user.FindFirst("FullName")?.Value;
+        return !string.IsNullOrWhiteSpace(fullName) ? fullName : (user.Identity?.Name ?? "My Quest user");
+    }
+
+    private static string Initials(System.Security.Claims.ClaimsPrincipal user)
+    {
+        var name = DisplayName(user);
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length switch
+        {
+            0 => "?",
+            1 => parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant(),
+            _ => $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant()
+        };
+    }
+}

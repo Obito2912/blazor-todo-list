@@ -1,0 +1,213 @@
+@page "/profile"
+@attribute [Authorize]
+@inject IAccountService AccountService
+
+<PageTitle>Profile | My Quest</PageTitle>
+
+<section class="profile-page" aria-labelledby="profile-heading">
+    <h1 id="profile-heading">Your profile</h1>
+    <p class="profile-page__intro">Keep your details up to date so your quests stay personal.</p>
+
+    @if (currentUser is null)
+    {
+        <div class="task-state" role="status" aria-live="polite">
+            <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
+            <span>Loading profile…</span>
+        </div>
+    }
+    else
+    {
+        <div class="profile-grid">
+            <div class="auth-card">
+                <div class="profile-card-header">
+                    <span class="avatar avatar--lg">@Initials(Input.FullName)</span>
+                    <div>
+                        <strong>@(string.IsNullOrWhiteSpace(currentUser.FullName) ? currentUser.Email : currentUser.FullName)</strong>
+                        <small>@string.Join(", ", roles)</small>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(profileMessage))
+                {
+                    <div class="alert alert-success" role="status">@profileMessage</div>
+                }
+                @if (!string.IsNullOrWhiteSpace(profileError))
+                {
+                    <div class="alert alert-danger" role="alert">@profileError</div>
+                }
+
+                <EditForm Model="Input" FormName="profile-info-form" OnValidSubmit="HandleProfileSubmitAsync">
+                    <DataAnnotationsValidator />
+
+                    <div class="form-group">
+                        <label class="form-label" for="profile-name">Full Name</label>
+                        <InputText id="profile-name" class="form-control" @bind-Value="Input.FullName" autocomplete="name" />
+                        <ValidationMessage For="() => Input.FullName" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="profile-email">Email Address</label>
+                        <InputText id="profile-email" class="form-control" @bind-Value="Input.Email" autocomplete="email" />
+                        <ValidationMessage For="() => Input.Email" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="profile-image">Profile Image URL <span>(optional)</span></label>
+                        <InputText id="profile-image" class="form-control" @bind-Value="Input.ProfileImageUrl" placeholder="https://example.com/avatar.png" />
+                        <ValidationMessage For="() => Input.ProfileImageUrl" />
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
+                </EditForm>
+            </div>
+
+            <div class="auth-card">
+                <h2 class="profile-card-title">Change password</h2>
+
+                @if (!string.IsNullOrWhiteSpace(passwordMessage))
+                {
+                    <div class="alert alert-success" role="status">@passwordMessage</div>
+                }
+                @if (!string.IsNullOrWhiteSpace(passwordError))
+                {
+                    <div class="alert alert-danger" role="alert">@passwordError</div>
+                }
+
+                <EditForm Model="PasswordInput" FormName="change-password-form" OnValidSubmit="HandleChangePasswordAsync">
+                    <DataAnnotationsValidator />
+
+                    <div class="form-group">
+                        <label class="form-label" for="current-password">Current Password</label>
+                        <InputText id="current-password" type="password" class="form-control" @bind-Value="PasswordInput.CurrentPassword" autocomplete="current-password" />
+                        <ValidationMessage For="() => PasswordInput.CurrentPassword" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="new-password">New Password</label>
+                        <InputText id="new-password" type="password" class="form-control" @bind-Value="PasswordInput.NewPassword" autocomplete="new-password" />
+                        <ValidationMessage For="() => PasswordInput.NewPassword" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="confirm-new-password">Confirm New Password</label>
+                        <InputText id="confirm-new-password" type="password" class="form-control" @bind-Value="PasswordInput.ConfirmNewPassword" autocomplete="new-password" />
+                        <ValidationMessage For="() => PasswordInput.ConfirmNewPassword" />
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-outline-secondary">Update password</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+</section>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    [SupplyParameterFromForm]
+    private ProfileFormValue Input { get; set; } = new();
+
+    [SupplyParameterFromForm]
+    private ChangePasswordFormValue PasswordInput { get; set; } = new();
+
+    private ApplicationUser? currentUser;
+    private IList<string> roles = new List<string>();
+
+    private string? profileMessage;
+    private string? profileError;
+    private string? passwordMessage;
+    private string? passwordError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationStateTask is null)
+        {
+            return;
+        }
+
+        var authState = await AuthenticationStateTask;
+        currentUser = await AccountService.GetUserAsync(authState.User);
+
+        if (currentUser is null)
+        {
+            return;
+        }
+
+        roles = await AccountService.GetRolesAsync(currentUser);
+
+        if (string.IsNullOrEmpty(Input.Email))
+        {
+            Input.FullName = currentUser.FullName;
+            Input.Email = currentUser.Email ?? string.Empty;
+            Input.ProfileImageUrl = currentUser.ProfileImageUrl;
+        }
+    }
+
+    private async Task HandleProfileSubmitAsync()
+    {
+        if (currentUser is null)
+        {
+            return;
+        }
+
+        var result = await AccountService.UpdateProfileAsync(currentUser, Input.FullName, Input.Email);
+        if (!result.Succeeded)
+        {
+            profileError = string.Join(" ", result.Errors.Select(error => error.Description));
+            profileMessage = null;
+            return;
+        }
+
+        var imageResult = await AccountService.UpdateProfileImageAsync(currentUser, Input.ProfileImageUrl);
+        if (!imageResult.Succeeded)
+        {
+            profileError = string.Join(" ", imageResult.Errors.Select(error => error.Description));
+            profileMessage = null;
+            return;
+        }
+
+        profileError = null;
+        profileMessage = "Your profile has been updated.";
+    }
+
+    private async Task HandleChangePasswordAsync()
+    {
+        if (currentUser is null)
+        {
+            return;
+        }
+
+        var result = await AccountService.ChangePasswordAsync(currentUser, PasswordInput.CurrentPassword, PasswordInput.NewPassword);
+        if (!result.Succeeded)
+        {
+            passwordError = string.Join(" ", result.Errors.Select(error => error.Description));
+            passwordMessage = null;
+            return;
+        }
+
+        passwordError = null;
+        passwordMessage = "Your password has been changed.";
+        PasswordInput = new ChangePasswordFormValue();
+    }
+
+    private static string Initials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "?";
+        }
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length switch
+        {
+            0 => "?",
+            1 => parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant(),
+            _ => $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant()
+        };
+    }
+}

@@ -1,0 +1,103 @@
+@page "/register"
+@inject IAccountService AccountService
+@inject NavigationManager Navigation
+
+<PageTitle>Create Account | My Quest</PageTitle>
+
+<section class="auth-page">
+    <span class="auth-badge" aria-hidden="true">★</span>
+    <h1>Start your quest.</h1>
+    <p class="auth-subtitle">Create your My Quest account to plan, focus, and track progress.</p>
+
+    <nav class="auth-tabs" aria-label="Account access">
+        <a href="login">Sign In</a>
+        <a class="is-active" href="register" aria-current="page">Create Account</a>
+    </nav>
+
+    <div class="auth-card">
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@errorMessage</div>
+        }
+
+        <EditForm Model="Input" FormName="register-form" OnValidSubmit="HandleRegisterAsync">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <span class="form-label">I Am Joining As A...</span>
+                <InputRadioGroup @bind-Value="Input.Role">
+                    <div class="role-select">
+                        <label class="role-option">
+                            <InputRadio Value="@("Student")" />
+                            <span class="role-option__card">
+                                <span class="role-option__icon" aria-hidden="true">🎓</span>
+                                <span>
+                                    <strong>Student</strong>
+                                    <small>Track my own quests</small>
+                                </span>
+                            </span>
+                        </label>
+                        <label class="role-option">
+                            <InputRadio Value="@("Teacher")" />
+                            <span class="role-option__card">
+                                <span class="role-option__icon" aria-hidden="true">📘</span>
+                                <span>
+                                    <strong>Teacher</strong>
+                                    <small>Assign &amp; review quests</small>
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+                </InputRadioGroup>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="register-name">Full Name</label>
+                <InputText id="register-name" class="form-control" @bind-Value="Input.FullName" placeholder="Jane Doe" autocomplete="name" />
+                <ValidationMessage For="() => Input.FullName" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="register-email">Email Address</label>
+                <InputText id="register-email" class="form-control" @bind-Value="Input.Email" placeholder="you@example.com" autocomplete="username" />
+                <ValidationMessage For="() => Input.Email" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="register-password">Password</label>
+                <InputText id="register-password" type="password" class="form-control" @bind-Value="Input.Password" placeholder="Min. 6 characters" autocomplete="new-password" />
+                <ValidationMessage For="() => Input.Password" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="register-confirm-password">Confirm Password</label>
+                <InputText id="register-confirm-password" type="password" class="form-control" @bind-Value="Input.ConfirmPassword" placeholder="Re-enter your password" autocomplete="new-password" />
+                <ValidationMessage For="() => Input.ConfirmPassword" />
+            </div>
+
+            <button type="submit" class="btn-quest-primary auth-submit">Create Account</button>
+        </EditForm>
+    </div>
+
+    <p class="auth-footer">Already have an account? <a class="auth-link" href="login">Sign In</a></p>
+</section>
+
+@code {
+    [SupplyParameterFromForm]
+    private RegisterFormValue Input { get; set; } = new();
+
+    private string? errorMessage;
+
+    private async Task HandleRegisterAsync()
+    {
+        var result = await AccountService.RegisterAsync(Input.FullName, Input.Email, Input.Password, Input.Role);
+
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo("/", forceLoad: true);
+            return;
+        }
+
+        errorMessage = string.Join(" ", result.Errors.Select(error => error.Description));
+    }
+}
