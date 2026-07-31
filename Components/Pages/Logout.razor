@@ -1,0 +1,19 @@
+@page "/logout"
+@inject IAccountService AccountService
+@inject NavigationManager Navigation
+
+<PageTitle>Sign Out | My Quest</PageTitle>
+
+<section class="auth-page">
+    <span class="auth-badge" aria-hidden="true">★</span>
+    <h1>See you soon.</h1>
+    <p class="auth-subtitle">You have been signed out of My Quest.</p>
+    <a class="btn-quest-primary auth-submit" href="login">Sign In Again</a>
+</section>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await AccountService.LogoutAsync();
+    }
+}

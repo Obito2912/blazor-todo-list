@@ -1,67 +1,114 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 
 public class AccountService : IAccountService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
 
-    public AccountService(UserManager<ApplicationUser> userManager)
+    public AccountService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
     {
         _userManager = userManager;
+        _signInManager = signInManager;
     }
 
-    public async Task<IdentityResult> UpdateUsernameAsync(string userId, string newUsername)
+    public async Task<IdentityResult> RegisterAsync(string fullName, string email, string password, string role)
     {
-        var user = await _userManager.FindByIdAsync(userId);
-
-        if (user is null)
+        var user = new ApplicationUser
         {
-            return IdentityResult.Failed(new IdentityError
-            {
-                Code = "UserNotFound",
-                Description = "User not found."
-            });
+            UserName = email,
+            Email = email,
+            FullName = fullName
+        };
+
+        var result = await _userManager.CreateAsync(user, password);
+        if (!result.Succeeded)
+        {
+            return result;
         }
 
-        var setUsernameResult = await _userManager.SetUserNameAsync(user, newUsername);
-        if (!setUsernameResult.Succeeded)
+        if (!string.IsNullOrWhiteSpace(role))
         {
-            return setUsernameResult;
+            await _userManager.AddToRoleAsync(user, role);
         }
 
-        // Keep this retunr method of email in sync only if username will be treated as email 
-        return await _userManager.UpdateAsync(user);
+        await _signInManager.SignInAsync(user, isPersistent: false);
+        return result;
     }
 
-    public async Task<IdentityResult> UpdatePasswordAsync(string userId, string currentPassword, string newPassword)
+    public async Task<SignInResult> LoginAsync(string email, string password, bool rememberMe)
     {
-        var user = await _userManager.FindByIdAsync(userId);
-
+        var user = await _userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            return IdentityResult.Failed(new IdentityError
-            {
-                Code = "UserNotFound",
-                Description = "User not found."
-            });
+            return SignInResult.Failed;
         }
 
+        return await _signInManager.PasswordSignInAsync(user, password, rememberMe, lockoutOnFailure: true);
+    }
+
+    public async Task LogoutAsync()
+    {
+        await _signInManager.SignOutAsync();
+    }
+
+    public async Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal principal)
+    {
+        if (principal.Identity?.IsAuthenticated != true)
+        {
+            return null;
+        }
+
+        return await _userManager.GetUserAsync(principal);
+    }
+
+    public async Task<IList<string>> GetRolesAsync(ApplicationUser user)
+    {
+        return await _userManager.GetRolesAsync(user);
+    }
+
+    public async Task<IdentityResult> UpdateProfileAsync(ApplicationUser user, string fullName, string email)
+    {
+        user.FullName = fullName;
+
+        if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
+        {
+            var setEmailResult = await _userManager.SetEmailAsync(user, email);
+            if (!setEmailResult.Succeeded)
+            {
+                return setEmailResult;
+            }
+
+            var setUserNameResult = await _userManager.SetUserNameAsync(user, email);
+            if (!setUserNameResult.Succeeded)
+            {
+                return setUserNameResult;
+            }
+        }
+
+        var updateResult = await _userManager.UpdateAsync(user);
+        if (updateResult.Succeeded)
+        {
+            await _signInManager.RefreshSignInAsync(user);
+        }
+
+        return updateResult;
+    }
+
+    public async Task<IdentityResult> UpdateProfileImageAsync(ApplicationUser user, string? profileImageUrl)
+    {
+        user.ProfileImageUrl = string.IsNullOrWhiteSpace(profileImageUrl) ? null : profileImageUrl.Trim();
+        var result = await _userManager.UpdateAsync(user);
+        if (result.Succeeded)
+        {
+            await _signInManager.RefreshSignInAsync(user);
+        }
+
+        return result;
+    }
+
+    public async Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword)
+    {
         return await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
-    }
-
-    public async Task<IdentityResult> UpdateProfileImageAsync(string userId, string imageUrl)
-    {
-        var user = await _userManager.FindByIdAsync(userId);
-
-        if (user is null)
-        {
-            return IdentityResult.Failed(new IdentityError
-            {
-                Code = "UserNotFound",
-                Description = "User not found."
-            });
-        }
-
-        user.ProfileImageUrl = imageUrl;
-        return await _userManager.UpdateAsync(user);
     }
 }
