@@ -60,7 +60,9 @@
     <Authorized>
         <div class="profile-card">
             <a class="profile-card__link" href="profile" aria-label="View profile for @DisplayName(context.User)">
-                <span class="avatar">@Initials(context.User)<i aria-hidden="true"></i></span>
+                <UserAvatar Name="@DisplayName(context.User)"
+                            ImageUrl="@ProfileImageUrl(context.User)"
+                            ShowStatus="true" />
                 <span class="profile-card__copy"><strong>@DisplayName(context.User)</strong><small>@(context.User.Identity?.Name)</small></span>
             </a>
             <a href="logout" class="profile-card__logout" title="Sign out" aria-label="Sign out">
@@ -77,15 +79,7 @@
         return !string.IsNullOrWhiteSpace(fullName) ? fullName : (user.Identity?.Name ?? "My Quest user");
     }
 
-    private static string Initials(System.Security.Claims.ClaimsPrincipal user)
-    {
-        var name = DisplayName(user);
-        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length switch
-        {
-            0 => "?",
-            1 => parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant(),
-            _ => $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant()
-        };
-    }
+    private static string? ProfileImageUrl(System.Security.Claims.ClaimsPrincipal user) =>
+        user.FindFirst("ProfileImageUrl")?.Value;
+
 }

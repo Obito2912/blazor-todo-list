@@ -43,7 +43,7 @@
                                 <span class="role-option__icon" aria-hidden="true">📘</span>
                                 <span>
                                     <strong>Teacher</strong>
-                                    <small>Assign &amp; review quests</small>
+                                    <small>Plan and track quests</small>
                                 </span>
                             </span>
                         </label>
@@ -84,9 +84,13 @@
 
 @code {
     [SupplyParameterFromForm]
-    private RegisterFormValue Input { get; set; } = new();
+    private RegisterFormValue Input { get; set; }
 
     private string? errorMessage;
+
+    public Register() => Input = new();
+
+    protected override void OnInitialized() => Input ??= new();
 
     private async Task HandleRegisterAsync()
     {

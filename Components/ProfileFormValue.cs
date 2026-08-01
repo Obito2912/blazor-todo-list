@@ -4,6 +4,8 @@ namespace blazor_todo_list.Components;
 
 public sealed class ProfileFormValue
 {
+    private string? profileImageUrl;
+
     [Required(ErrorMessage = "Enter your full name.")]
     [StringLength(100, ErrorMessage = "Keep your name under 100 characters.")]
     public string FullName { get; set; } = string.Empty;
@@ -14,7 +16,11 @@ public sealed class ProfileFormValue
 
     [StringLength(300, ErrorMessage = "Keep the image URL under 300 characters.")]
     [Url(ErrorMessage = "Enter a valid URL.")]
-    public string? ProfileImageUrl { get; set; }
+    public string? ProfileImageUrl
+    {
+        get => profileImageUrl;
+        set => profileImageUrl = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
 }
 
 public sealed class ChangePasswordFormValue

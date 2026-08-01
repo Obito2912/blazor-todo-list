@@ -14,6 +14,15 @@ public class AccountService : IAccountService
 
     public async Task<IdentityResult> RegisterAsync(string fullName, string email, string password, string role)
     {
+        if (role is not ("Student" or "Teacher"))
+        {
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "InvalidRole",
+                Description = "Choose either the Student or Teacher role."
+            });
+        }
+
         var user = new ApplicationUser
         {
             UserName = email,
@@ -27,9 +36,11 @@ public class AccountService : IAccountService
             return result;
         }
 
-        if (!string.IsNullOrWhiteSpace(role))
+        var roleResult = await _userManager.AddToRoleAsync(user, role);
+        if (!roleResult.Succeeded)
         {
-            await _userManager.AddToRoleAsync(user, role);
+            await _userManager.DeleteAsync(user);
+            return roleResult;
         }
 
         await _signInManager.SignInAsync(user, isPersistent: false);

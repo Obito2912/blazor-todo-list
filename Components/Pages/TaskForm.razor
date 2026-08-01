@@ -1,16 +1,20 @@
 @page "/tasks/new"
 @rendermode InteractiveServer
+@attribute [Authorize]
+@inject ITaskService TaskService
+@inject NavigationManager Navigation
+@using System.Security.Claims
 
-<PageTitle>New task | My Quest</PageTitle>
+<PageTitle>@(EditId is null ? "New task" : "Edit task") | My Quest</PageTitle>
 
 <section class="task-form-page" aria-labelledby="task-form-heading">
     <a class="back-link" href="tasks">← Back to tasks</a>
     <header>
-        <h1 id="task-form-heading">Create a task</h1>
-        <p>Add the details now. You can update them later.</p>
+        <h1 id="task-form-heading">@(EditId is null ? "Create a task" : "Edit task")</h1>
+        <p>@(EditId is null ? "Add the details now. You can update them later." : "Update the details for this task.")</p>
     </header>
 
-    <EditForm Model="FormValue" OnValidSubmit="HandleValidSubmit" FormName="task-form">
+    <EditForm Model="FormValue" OnValidSubmit="HandleValidSubmitAsync" FormName="task-form">
         <DataAnnotationsValidator />
 
         <div class="mb-4">
@@ -27,37 +31,118 @@
 
         <div class="mb-4">
             <label class="form-label" for="task-due-date">Due date <span>(optional)</span></label>
-            <InputDate id="task-due-date" class="form-control" @bind-Value="FormValue.DueDate" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+            <InputDate id="task-due-date" class="form-control" @bind-Value="FormValue.DueDate" />
         </div>
 
-        @if (showIntegrationNotice)
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
         {
-            <div class="alert alert-info" role="status">
-                The form is valid. Saving will be connected when the task service is ready.
-            </div>
+            <div class="alert alert-danger" role="alert">@errorMessage</div>
         }
 
         <div class="form-actions">
             <a class="btn btn-outline-secondary" href="tasks">Cancel</a>
-            <button class="btn btn-primary" type="submit">Save task</button>
+            <button class="btn btn-primary" type="submit" disabled="@isSaving">@(isSaving ? "Saving…" : "Save task")</button>
         </div>
     </EditForm>
 </section>
 
 @code {
-    private bool showIntegrationNotice;
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
-    [Parameter] public TaskFormValue FormValue { get; set; } = new();
-    [Parameter] public EventCallback<TaskFormValue> ValidSubmit { get; set; }
+    [SupplyParameterFromQuery(Name = "edit")]
+    private int? EditId { get; set; }
 
-    private async Task HandleValidSubmit()
+    [SupplyParameterFromForm]
+    private TaskFormValue FormValue { get; set; }
+
+    public TaskForm() => FormValue = new();
+
+    private string? userId;
+    private string? errorMessage;
+    private bool isSaving;
+    private int? loadedEditId;
+
+    protected override async Task OnParametersSetAsync()
     {
-        if (ValidSubmit.HasDelegate)
+        FormValue ??= new();
+
+        if (AuthenticationStateTask is null)
         {
-            await ValidSubmit.InvokeAsync(FormValue);
+            errorMessage = "Authentication state is unavailable.";
             return;
         }
 
-        showIntegrationNotice = true;
+        var state = await AuthenticationStateTask;
+        userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            errorMessage = "The signed-in user could not be identified.";
+            return;
+        }
+
+        if (EditId is not null && loadedEditId != EditId)
+        {
+            var task = await TaskService.GetTaskAsync(EditId.Value, userId);
+            if (task is null)
+            {
+                Navigation.NavigateTo("not-found");
+                return;
+            }
+
+            FormValue = new TaskFormValue
+            {
+                Title = task.Title,
+                Description = task.Description,
+                DueDate = task.DueDate
+            };
+            loadedEditId = EditId;
+        }
+    }
+
+    private async Task HandleValidSubmitAsync()
+    {
+        if (userId is null)
+        {
+            errorMessage = "You must be signed in to save a task.";
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+        try
+        {
+            var task = new TaskItem
+            {
+                Id = EditId ?? 0,
+                Title = FormValue.Title,
+                Description = FormValue.Description,
+                DueDate = FormValue.DueDate
+            };
+
+            if (EditId is null)
+            {
+                await TaskService.CreateTaskAsync(task, userId);
+            }
+            else if (!await TaskService.UpdateTaskAsync(task, userId))
+            {
+                errorMessage = "The task no longer exists or you do not have access to it.";
+                return;
+            }
+
+            Navigation.NavigateTo("tasks");
+        }
+        catch (ArgumentException exception)
+        {
+            errorMessage = exception.Message;
+        }
+        catch (Exception)
+        {
+            errorMessage = "The task could not be saved. Please try again.";
+        }
+        finally
+        {
+            isSaving = false;
+        }
     }
 }

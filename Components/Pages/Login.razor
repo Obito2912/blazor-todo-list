@@ -40,7 +40,7 @@
                     <InputCheckbox @bind-Value="Input.RememberMe" />
                     Keep me signed in
                 </label>
-                <a class="auth-link" href="login">Forgot password?</a>
+                <span class="text-muted">Password recovery is not configured.</span>
             </div>
 
             <button type="submit" class="btn-quest-primary auth-submit">Sign In</button>
@@ -52,12 +52,16 @@
 
 @code {
     [SupplyParameterFromForm]
-    private LoginFormValue Input { get; set; } = new();
+    private LoginFormValue Input { get; set; }
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
     private string? errorMessage;
+
+    public Login() => Input = new();
+
+    protected override void OnInitialized() => Input ??= new();
 
     private async Task HandleLoginAsync()
     {
@@ -65,12 +69,25 @@
 
         if (result.Succeeded)
         {
-            Navigation.NavigateTo(string.IsNullOrWhiteSpace(ReturnUrl) ? "/" : ReturnUrl, forceLoad: true);
+            Navigation.NavigateTo(GetSafeReturnUrl(), forceLoad: true);
             return;
         }
 
         errorMessage = result.IsLockedOut
             ? "This account is temporarily locked. Please try again later."
             : "Invalid email or password.";
+    }
+
+    private string GetSafeReturnUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ReturnUrl))
+        {
+            return "/";
+        }
+
+        var relativeUrl = ReturnUrl.TrimStart('/');
+        return Uri.TryCreate(relativeUrl, UriKind.Relative, out _) && !relativeUrl.StartsWith("\\", StringComparison.Ordinal)
+            ? relativeUrl
+            : "/";
     }
 }

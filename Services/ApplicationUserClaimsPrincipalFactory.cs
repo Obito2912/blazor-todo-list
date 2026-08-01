@@ -23,6 +23,11 @@ public class ApplicationUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<
         if (principal.Identity is ClaimsIdentity identity && !string.IsNullOrWhiteSpace(user.FullName))
         {
             identity.AddClaim(new Claim("FullName", user.FullName));
+
+            if (!string.IsNullOrWhiteSpace(user.ProfileImageUrl))
+            {
+                identity.AddClaim(new Claim("ProfileImageUrl", user.ProfileImageUrl));
+            }
         }
 
         return principal;

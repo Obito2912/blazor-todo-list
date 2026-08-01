@@ -1,6 +1,9 @@
 @page "/tasks"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @inject NavigationManager Navigation
+@inject ITaskService TaskService
+@using System.Security.Claims
 
 <PageTitle>My Tasks | My Quest</PageTitle>
 
@@ -16,19 +19,19 @@
         </a>
     </div>
 
-    @if (IsLoading)
+    @if (isLoading)
     {
         <div class="task-state" role="status" aria-live="polite">
             <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
             <span>Loading tasks…</span>
         </div>
     }
-    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    else if (!string.IsNullOrWhiteSpace(errorMessage))
     {
         <div class="alert alert-danger" role="alert">
             <strong>Tasks could not be loaded.</strong>
-            <span>@ErrorMessage</span>
-            @if (Retry.HasDelegate) { <button type="button" class="btn btn-sm btn-outline-danger" @onclick="Retry">Try again</button> }
+            <span>@errorMessage</span>
+            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="LoadTasksAsync">Try again</button>
         </div>
     }
     else if (FilteredTasks.Count == 0)
@@ -36,7 +39,14 @@
         <div class="task-state task-state--empty">
             <h2>@EmptyStateTitle</h2>
             <p>@EmptyStateMessage</p>
-            <button type="button" class="btn btn-outline-secondary" @onclick="ClearFilters">Clear filters</button>
+            @if (tasks.Count == 0)
+            {
+                <a class="btn btn-primary" href="tasks/new">Add a task</a>
+            }
+            else
+            {
+                <button type="button" class="btn btn-outline-secondary" @onclick="ClearFilters">Clear filters</button>
+            }
         </div>
     }
     else
@@ -49,35 +59,29 @@
                           Description="@task.Description"
                           IsCompleted="@task.IsCompleted"
                           DueDate="@task.DueDate"
-                          CompletionChanged="completed => SetCompletion(task.Id, completed)"
+                          CompletionChanged="completed => SetCompletionAsync(task.Id, completed)"
                           OnEdit="() => EditTask(task.Id)"
-                          OnDelete="() => DeleteTask(task.Id)" />
+                          OnDelete="() => DeleteTaskAsync(task.Id)" />
             }
         </div>
     }
 </section>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    [SupplyParameterFromQuery(Name = "filter")]
+    private string? FilterQuery { get; set; }
+
     private string searchTerm = string.Empty;
     private TaskFilter selectedFilter = TaskFilter.All;
+    private IReadOnlyList<TaskListItem> tasks = [];
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string? userId;
 
-    [Parameter] public IReadOnlyList<TaskListItem> Tasks { get; set; } =
-    [
-        new(1, "Study for Calculus Exam", "Review chapters 5–8 and practice past exam questions.", false, new DateTime(2025, 5, 24)),
-        new(2, "Write English Essay", "Complete the final draft for the literature analysis essay.", false, new DateTime(2025, 5, 26)),
-        new(3, "Biology Lab Report", "Analyze results and write up the lab report.", false, new DateTime(2025, 5, 28)),
-        new(4, "Group Project Meeting", "Discuss progress and assign tasks for the presentation.", false, new DateTime(2025, 5, 30)),
-        new(5, "Workout Routine", "Plan 4 workouts for the week and track progress.", false, new DateTime(2025, 5, 31))
-    ];
-
-    [Parameter] public bool IsLoading { get; set; }
-    [Parameter] public string? ErrorMessage { get; set; }
-    [Parameter] public EventCallback Retry { get; set; }
-    [Parameter] public EventCallback<int> EditRequested { get; set; }
-    [Parameter] public EventCallback<int> DeleteRequested { get; set; }
-    [Parameter] public EventCallback<(int Id, bool IsCompleted)> CompletionChanged { get; set; }
-
-    private IReadOnlyList<TaskListItem> FilteredTasks => Tasks
+    private IReadOnlyList<TaskListItem> FilteredTasks => tasks
         .Where(task => string.IsNullOrWhiteSpace(searchTerm)
             || task.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
             || (task.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
@@ -89,19 +93,72 @@
         })
         .ToList();
 
-    private string EmptyStateTitle => "No matching tasks";
-    private string EmptyStateMessage => "Try another search or status filter.";
+    private string EmptyStateTitle => tasks.Count == 0 ? "No tasks yet" : "No matching tasks";
+    private string EmptyStateMessage => tasks.Count == 0
+        ? "Add your first task to begin your quest."
+        : "Try another search or status filter.";
 
-    private async Task SetCompletion(int id, bool completed)
+    protected override async Task OnParametersSetAsync()
     {
-        Tasks = Tasks.Select(task => task.Id == id ? task with { IsCompleted = completed } : task).ToList();
-        if (CompletionChanged.HasDelegate) await CompletionChanged.InvokeAsync((id, completed));
+        selectedFilter = Enum.TryParse<TaskFilter>(FilterQuery, true, out var filter) ? filter : TaskFilter.All;
+        if (userId is null)
+        {
+            await LoadTasksAsync();
+        }
     }
 
-    private async Task DeleteTask(int id)
+    private async Task LoadTasksAsync()
     {
-        Tasks = Tasks.Where(task => task.Id != id).ToList();
-        if (DeleteRequested.HasDelegate) await DeleteRequested.InvokeAsync(id);
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            if (AuthenticationStateTask is null)
+            {
+                throw new InvalidOperationException("Authentication state is unavailable.");
+            }
+
+            var state = await AuthenticationStateTask;
+            userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new InvalidOperationException("The signed-in user could not be identified.");
+            }
+
+            var taskItems = await TaskService.GetTasksAsync(userId);
+            tasks = taskItems.Select(ToListItem).ToList();
+        }
+        catch (Exception)
+        {
+            errorMessage = "Please try again.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SetCompletionAsync(int id, bool completed)
+    {
+        if (userId is null || !await TaskService.SetCompletionAsync(id, completed, userId))
+        {
+            errorMessage = "The task could not be updated.";
+            return;
+        }
+
+        tasks = tasks.Select(task => task.Id == id ? task with { IsCompleted = completed } : task).ToList();
+    }
+
+    private async Task DeleteTaskAsync(int id)
+    {
+        if (userId is null || !await TaskService.DeleteTaskAsync(id, userId))
+        {
+            errorMessage = "The task could not be deleted.";
+            return;
+        }
+
+        tasks = tasks.Where(task => task.Id != id).ToList();
     }
 
     private void EditTask(int id) => Navigation.NavigateTo($"tasks/new?edit={id}");
@@ -111,4 +168,7 @@
         searchTerm = string.Empty;
         selectedFilter = TaskFilter.All;
     }
+
+    private static TaskListItem ToListItem(TaskItem task) =>
+        new(task.Id, task.Title, task.Description, task.IsCompleted, task.DueDate);
 }

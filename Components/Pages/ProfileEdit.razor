@@ -20,7 +20,7 @@
         <div class="profile-grid">
             <div class="auth-card">
                 <div class="profile-card-header">
-                    <span class="avatar avatar--lg">@Initials(Input.FullName)</span>
+                    <UserAvatar Name="@Input.FullName" ImageUrl="@Input.ProfileImageUrl" CssClass="avatar--lg" />
                     <div>
                         <strong>@(string.IsNullOrWhiteSpace(currentUser.FullName) ? currentUser.Email : currentUser.FullName)</strong>
                         <small>@string.Join(", ", roles)</small>
@@ -110,10 +110,16 @@
     private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
     [SupplyParameterFromForm]
-    private ProfileFormValue Input { get; set; } = new();
+    private ProfileFormValue Input { get; set; }
 
     [SupplyParameterFromForm]
-    private ChangePasswordFormValue PasswordInput { get; set; } = new();
+    private ChangePasswordFormValue PasswordInput { get; set; }
+
+    public ProfileEdit()
+    {
+        Input = new();
+        PasswordInput = new();
+    }
 
     private ApplicationUser? currentUser;
     private IList<string> roles = new List<string>();
@@ -125,6 +131,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Input ??= new();
+        PasswordInput ??= new();
+
         if (AuthenticationStateTask is null)
         {
             return;
@@ -150,6 +159,9 @@
 
     private async Task HandleProfileSubmitAsync()
     {
+        Input ??= new();
+        PasswordInput ??= new();
+
         if (currentUser is null)
         {
             return;
@@ -177,6 +189,9 @@
 
     private async Task HandleChangePasswordAsync()
     {
+        Input ??= new();
+        PasswordInput ??= new();
+
         if (currentUser is null)
         {
             return;
@@ -195,19 +210,4 @@
         PasswordInput = new ChangePasswordFormValue();
     }
 
-    private static string Initials(string? name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return "?";
-        }
-
-        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length switch
-        {
-            0 => "?",
-            1 => parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant(),
-            _ => $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant()
-        };
-    }
 }
