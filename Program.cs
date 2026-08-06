@@ -55,6 +55,34 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var adminEmail = "admin@example.com";
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+    if (adminUser == null)
+    {
+        adminUser = new ApplicationUser
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            EmailConfirmed = true
+        };
+        await userManager.CreateAsync(adminUser, "Admin@123");
+    }
+    if (!await userManager.IsInRoleAsync(adminUser, "Teacher"))
+    {
+        await userManager.AddToRoleAsync(adminUser, "Teacher");
+    }
+    if (!appDbContext.TaskItems.Any(t => t.UserId == adminUser.Id))
+    {
+        appDbContext.TaskItems.Add(new TaskItem { Title = "Sample Todo 1", UserId = adminUser.Id, IsCompleted = false });
+        appDbContext.TaskItems.Add(new TaskItem { Title = "Sample Todo 2", UserId = adminUser.Id, IsCompleted = true });
+        await appDbContext.SaveChangesAsync();
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
