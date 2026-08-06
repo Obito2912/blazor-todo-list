@@ -5,11 +5,12 @@ public class AccountService : IAccountService
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
-
-    public AccountService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+    private readonly ILogger<AccountService> _logger;
+    public AccountService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ILogger<AccountService> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _logger = logger;
     }
 
     public async Task<IdentityResult> RegisterAsync(string fullName, string email, string password, string role)
@@ -101,6 +102,7 @@ public class AccountService : IAccountService
         if (updateResult.Succeeded)
         {
             await _signInManager.RefreshSignInAsync(user);
+            _logger.LogInformation("User profile updated successfully for user {UserId}.", user.Id);
         }
 
         return updateResult;
@@ -113,6 +115,7 @@ public class AccountService : IAccountService
         if (result.Succeeded)
         {
             await _signInManager.RefreshSignInAsync(user);
+            _logger.LogInformation("User profile image updated successfully for user {UserId}.", user.Id);
         }
 
         return result;
@@ -120,6 +123,13 @@ public class AccountService : IAccountService
 
     public async Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword)
     {
-        return await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (result.Succeeded)
+        {
+            await _signInManager.RefreshSignInAsync(user);
+            _logger.LogInformation("User password changed successfully for user {UserId}.", user.Id);
+        }
+
+        return result;
     }
 }

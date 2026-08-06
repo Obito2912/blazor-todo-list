@@ -1,148 +1,106 @@
 @page "/tasks/new"
 @rendermode InteractiveServer
-@attribute [Authorize]
 @inject ITaskService TaskService
+@inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
 @using System.Security.Claims
 
-<PageTitle>@(EditId is null ? "New task" : "Edit task") | My Quest</PageTitle>
+<PageTitle>@(TaskId.HasValue ? "Edit task" : "New task") | My Quest</PageTitle>
 
 <section class="task-form-page" aria-labelledby="task-form-heading">
     <a class="back-link" href="tasks">← Back to tasks</a>
     <header>
-        <h1 id="task-form-heading">@(EditId is null ? "Create a task" : "Edit task")</h1>
-        <p>@(EditId is null ? "Add the details now. You can update them later." : "Update the details for this task.")</p>
+        <h1 id="task-form-heading">@(TaskId.HasValue ? "Edit task" : "Create a task")</h1>
     </header>
 
-    <EditForm Model="FormValue" OnValidSubmit="HandleValidSubmitAsync" FormName="task-form">
-        <DataAnnotationsValidator />
+    @if (!IsLoading)
+    {
+        <EditForm Model="FormValue" OnValidSubmit="HandleValidSubmit" FormName="task-form">
+            <DataAnnotationsValidator />
 
-        <div class="mb-4">
-            <label class="form-label" for="task-title">Title</label>
-            <InputText id="task-title" class="form-control" @bind-Value="FormValue.Title" maxlength="120" />
-            <ValidationMessage For="() => FormValue.Title" />
-        </div>
+            <div class="mb-4">
+                <label class="form-label" for="task-title">Title</label>
+                <InputText id="task-title" class="form-control" @bind-Value="FormValue.Title" maxlength="120" />
+                <ValidationMessage For="() => FormValue.Title" />
+            </div>
 
-        <div class="mb-4">
-            <label class="form-label" for="task-description">Description <span>(optional)</span></label>
-            <InputTextArea id="task-description" class="form-control" @bind-Value="FormValue.Description" rows="5" maxlength="1000" />
-            <ValidationMessage For="() => FormValue.Description" />
-        </div>
+            <div class="mb-4">
+                <label class="form-label" for="task-description">Description</label>
+                <InputTextArea id="task-description" class="form-control" @bind-Value="FormValue.Description" rows="5" maxlength="1000" />
+                <ValidationMessage For="() => FormValue.Description" />
+            </div>
 
-        <div class="mb-4">
-            <label class="form-label" for="task-due-date">Due date <span>(optional)</span></label>
-            <InputDate id="task-due-date" class="form-control" @bind-Value="FormValue.DueDate" />
-        </div>
+            <div class="mb-4">
+                <label class="form-label" for="task-due-date">Due date</label>
+                <InputDate id="task-due-date" class="form-control" @bind-Value="FormValue.DueDate" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+            </div>
 
-        @if (!string.IsNullOrWhiteSpace(errorMessage))
-        {
-            <div class="alert alert-danger" role="alert">@errorMessage</div>
-        }
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+            }
 
-        <div class="form-actions">
-            <a class="btn btn-outline-secondary" href="tasks">Cancel</a>
-            <button class="btn btn-primary" type="submit" disabled="@isSaving">@(isSaving ? "Saving…" : "Save task")</button>
-        </div>
-    </EditForm>
+            <div class="form-actions">
+                <a class="btn btn-outline-secondary" href="tasks">Cancel</a>
+                <button class="btn btn-primary" type="submit">Save task</button>
+            </div>
+        </EditForm>
+    }
 </section>
 
 @code {
-    [CascadingParameter]
-    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
-
     [SupplyParameterFromQuery(Name = "edit")]
-    private int? EditId { get; set; }
+    public int? TaskId { get; set; }
 
-    [SupplyParameterFromForm]
-    private TaskFormValue FormValue { get; set; }
-
-    public TaskForm() => FormValue = new();
-
+    private TaskFormValue FormValue { get; set; } = new();
     private string? userId;
-    private string? errorMessage;
-    private bool isSaving;
-    private int? loadedEditId;
+    private bool IsLoading = true;
+    private string? ErrorMessage;
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
-        FormValue ??= new();
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (AuthenticationStateTask is null)
+        if (TaskId.HasValue && userId is not null)
         {
-            errorMessage = "Authentication state is unavailable.";
-            return;
-        }
-
-        var state = await AuthenticationStateTask;
-        userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            errorMessage = "The signed-in user could not be identified.";
-            return;
-        }
-
-        if (EditId is not null && loadedEditId != EditId)
-        {
-            var task = await TaskService.GetTaskAsync(EditId.Value, userId);
-            if (task is null)
+            var existing = await TaskService.GetByIdAsync(userId, TaskId.Value);
+            if (existing is not null)
             {
-                Navigation.NavigateTo("not-found");
-                return;
+                FormValue = new TaskFormValue
+                {
+                    Title = existing.Title,
+                    Description = existing.Description,
+                    DueDate = existing.DueDate
+                };
             }
-
-            FormValue = new TaskFormValue
-            {
-                Title = task.Title,
-                Description = task.Description,
-                DueDate = task.DueDate
-            };
-            loadedEditId = EditId;
         }
+
+        IsLoading = false;
     }
 
-    private async Task HandleValidSubmitAsync()
+    private async Task HandleValidSubmit()
     {
         if (userId is null)
         {
-            errorMessage = "You must be signed in to save a task.";
+            ErrorMessage = "You must be logged in to save a task.";
             return;
         }
 
-        isSaving = true;
-        errorMessage = null;
-        try
+        if (TaskId.HasValue)
         {
-            var task = new TaskItem
+            var updated = await TaskService.UpdateAsync(userId, TaskId.Value, FormValue);
+            if (updated is null)
             {
-                Id = EditId ?? 0,
-                Title = FormValue.Title,
-                Description = FormValue.Description,
-                DueDate = FormValue.DueDate
-            };
-
-            if (EditId is null)
-            {
-                await TaskService.CreateTaskAsync(task, userId);
-            }
-            else if (!await TaskService.UpdateTaskAsync(task, userId))
-            {
-                errorMessage = "The task no longer exists or you do not have access to it.";
+                ErrorMessage = "That task could not be found.";
                 return;
             }
+        }
+        else
+        {
+            await TaskService.AddAsync(userId, FormValue);
+        }
 
-            Navigation.NavigateTo("tasks");
-        }
-        catch (ArgumentException exception)
-        {
-            errorMessage = exception.Message;
-        }
-        catch (Exception)
-        {
-            errorMessage = "The task could not be saved. Please try again.";
-        }
-        finally
-        {
-            isSaving = false;
-        }
+        Navigation.NavigateTo("tasks");
     }
 }

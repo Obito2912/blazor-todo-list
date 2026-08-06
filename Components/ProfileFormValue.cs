@@ -2,10 +2,26 @@ using System.ComponentModel.DataAnnotations;
 
 namespace blazor_todo_list.Components;
 
+public sealed class OptionalUrlAttribute : ValidationAttribute
+{
+    public OptionalUrlAttribute() : base("Enter a valid URL.") { }
+
+    public override bool IsValid(object? value)
+    {
+        var text = value as string;
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return true; // optional — blank is fine
+        }
+
+        return Uri.TryCreate(text, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+    }
+}
+
 public sealed class ProfileFormValue
 {
-    private string? profileImageUrl;
-
     [Required(ErrorMessage = "Enter your full name.")]
     [StringLength(100, ErrorMessage = "Keep your name under 100 characters.")]
     public string FullName { get; set; } = string.Empty;
@@ -15,12 +31,8 @@ public sealed class ProfileFormValue
     public string Email { get; set; } = string.Empty;
 
     [StringLength(300, ErrorMessage = "Keep the image URL under 300 characters.")]
-    [Url(ErrorMessage = "Enter a valid URL.")]
-    public string? ProfileImageUrl
-    {
-        get => profileImageUrl;
-        set => profileImageUrl = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    }
+    [OptionalUrl]
+    public string? ProfileImageUrl { get; set; }
 }
 
 public sealed class ChangePasswordFormValue

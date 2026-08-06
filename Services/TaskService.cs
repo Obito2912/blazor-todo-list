@@ -1,132 +1,139 @@
+using blazor_todo_list.Components;
 using Microsoft.EntityFrameworkCore;
 
-public sealed class TaskService : ITaskService
+public class TaskService : ITaskService
 {
-    private readonly AppDbContext _dbContext;
-
-    public TaskService(AppDbContext dbContext)
+    private readonly AppDbContext _context;
+    private readonly ILogger<TaskService> _logger;
+    public TaskService(AppDbContext context, ILogger<TaskService> logger)
     {
-        _dbContext = dbContext;
+        _context = context;
+        _logger = logger;
     }
 
-    public async Task<IReadOnlyList<TaskItem>> GetTasksAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<TaskListItem> AddAsync(string userId, TaskFormValue formValue)
     {
-        EnsureUserId(userId);
+        ValidateFormValue(formValue);
 
-        return await _dbContext.TaskItems
-            .AsNoTracking()
-            .Where(task => task.UserId == userId)
-            .OrderBy(task => task.IsCompleted)
-            .ThenBy(task => task.DueDate == null)
-            .ThenBy(task => task.DueDate)
-            .ThenByDescending(task => task.CreatedAt)
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<TaskItem?> GetTaskAsync(int id, string userId, CancellationToken cancellationToken = default)
-    {
-        EnsureUserId(userId);
-        return await _dbContext.TaskItems.AsNoTracking()
-            .SingleOrDefaultAsync(task => task.Id == id && task.UserId == userId, cancellationToken);
-    }
-
-    public async Task<TaskItem> CreateTaskAsync(TaskItem task, string userId, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(task);
-        EnsureUserId(userId);
-        Validate(task);
-
-        var entity = new TaskItem
+        var task = new TaskItem
         {
-            Title = task.Title.Trim(),
-            Description = NormalizeDescription(task.Description),
-            DueDate = task.DueDate,
-            IsCompleted = task.IsCompleted,
-            CreatedAt = DateTime.UtcNow,
-            UserId = userId
+            Title = formValue.Title.Trim(),
+            Description = formValue.Description,
+            DueDate = formValue.DueDate,
+            UserId = userId,
+            IsCompleted = false,
+            CreatedAt = DateTime.UtcNow
         };
 
-        _dbContext.TaskItems.Add(entity);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        return entity;
+        _context.TaskItems.Add(task);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Task added successfully for user {UserId} with task id {TaskId}.", userId, task.Id);
+        return ToListItem(task);
     }
 
-    public async Task<bool> UpdateTaskAsync(TaskItem task, string userId, CancellationToken cancellationToken = default)
+    public async Task<TaskListItem?> UpdateAsync(string userId, int taskId, TaskFormValue formValue)
     {
-        ArgumentNullException.ThrowIfNull(task);
-        EnsureUserId(userId);
-        Validate(task);
+        ValidateFormValue(formValue);
 
-        var entity = await _dbContext.TaskItems
-            .SingleOrDefaultAsync(item => item.Id == task.Id && item.UserId == userId, cancellationToken);
-        if (entity is null)
-        {
-            return false;
-        }
+        var task = await _context.TaskItems
+            .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
 
-        entity.Title = task.Title.Trim();
-        entity.Description = NormalizeDescription(task.Description);
-        entity.DueDate = task.DueDate;
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        if (task is null) return null;
+
+        task.Title = formValue.Title.Trim();
+        task.Description = formValue.Description;
+        task.DueDate = formValue.DueDate;
+
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Task updated successfully for user {UserId} with task id {TaskId}.", userId, task.Id);
+        return ToListItem(task);
+    }
+
+    public async Task<bool> DeleteAsync(string userId, int taskId)
+    {
+        var task = await _context.TaskItems
+            .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+
+        if (task is null) return false;
+
+        _context.TaskItems.Remove(task);
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Task deleted successfully for user {UserId} with task id {TaskId}.", userId, task.Id);
         return true;
     }
 
-    public async Task<bool> DeleteTaskAsync(int id, string userId, CancellationToken cancellationToken = default)
+    public async Task<TaskListItem?> GetByIdAsync(string userId, int taskId)
     {
-        EnsureUserId(userId);
-        var entity = await _dbContext.TaskItems
-            .SingleOrDefaultAsync(task => task.Id == id && task.UserId == userId, cancellationToken);
-        if (entity is null)
-        {
-            return false;
-        }
+        var task = await _context.TaskItems
+            .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
 
-        _dbContext.TaskItems.Remove(entity);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        return task is null ? null : ToListItem(task);
+    }
+
+    public async Task<List<TaskListItem>> GetAllForUserAsync(string userId)
+    {
+        return await _context.TaskItems
+            .Where(t => t.UserId == userId)
+            .OrderByDescending(t => t.CreatedAt)
+            .Select(t => new TaskListItem(t.Id, t.Title, t.Description, t.IsCompleted, t.DueDate))
+            .ToListAsync();
+    }
+
+    public async Task<List<TaskListItem>> SearchAsync(string userId, string searchTerm)
+    {
+        var term = searchTerm?.Trim() ?? string.Empty;
+
+        return await _context.TaskItems
+            .Where(t => t.UserId == userId && EF.Functions.Like(t.Title, $"%{term}%"))
+            .OrderByDescending(t => t.CreatedAt)
+            .Select(t => new TaskListItem(t.Id, t.Title, t.Description, t.IsCompleted, t.DueDate))
+            .ToListAsync();
+    }
+
+    public async Task<List<TaskListItem>> FilterByStatusAsync(string userId, TaskFilter filter)
+    {
+        var query = _context.TaskItems.Where(t => t.UserId == userId);
+
+        query = filter switch
+        {
+            TaskFilter.Pending => query.Where(t => !t.IsCompleted),
+            TaskFilter.Completed => query.Where(t => t.IsCompleted),
+            _ => query
+        };
+
+        return await query
+            .OrderByDescending(t => t.CreatedAt)
+            .Select(t => new TaskListItem(t.Id, t.Title, t.Description, t.IsCompleted, t.DueDate))
+            .ToListAsync();
+    }
+
+    public async Task<bool> ToggleStatusAsync(string userId, int taskId)
+    {
+        var task = await _context.TaskItems
+            .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+
+        if (task is null) return false;
+
+        task.IsCompleted = !task.IsCompleted;
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Task status toggled successfully for user {UserId} with task id {TaskId}. New status: {IsCompleted}", userId, task.Id, task.IsCompleted);
         return true;
     }
 
-    public async Task<bool> SetCompletionAsync(int id, bool isCompleted, string userId, CancellationToken cancellationToken = default)
+    private static void ValidateFormValue(TaskFormValue formValue)
     {
-        EnsureUserId(userId);
-        var entity = await _dbContext.TaskItems
-            .SingleOrDefaultAsync(task => task.Id == id && task.UserId == userId, cancellationToken);
-        if (entity is null)
+        if (string.IsNullOrWhiteSpace(formValue.Title))
         {
-            return false;
+            throw new ArgumentException("Title cannot be empty.", nameof(formValue));
         }
 
-        entity.IsCompleted = isCompleted;
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        return true;
-    }
-
-    private static void EnsureUserId(string userId)
-    {
-        if (string.IsNullOrWhiteSpace(userId))
+        if (formValue.DueDate is { } dueDate && dueDate.Date < DateTime.Today)
         {
-            throw new ArgumentException("A user ID is required.", nameof(userId));
+            throw new ArgumentException("Due date cannot be in the past.", nameof(formValue));
         }
     }
 
-    private static void Validate(TaskItem task)
-    {
-        if (string.IsNullOrWhiteSpace(task.Title))
-        {
-            throw new ArgumentException("A task title is required.", nameof(task));
-        }
-
-        if (task.Title.Trim().Length > 120)
-        {
-            throw new ArgumentException("The task title cannot exceed 120 characters.", nameof(task));
-        }
-
-        if (task.Description?.Length > 1000)
-        {
-            throw new ArgumentException("The task description cannot exceed 1,000 characters.", nameof(task));
-        }
-    }
-
-    private static string? NormalizeDescription(string? description) =>
-        string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+    private static TaskListItem ToListItem(TaskItem task) =>
+        new(task.Id, task.Title, task.Description, task.IsCompleted, task.DueDate);
 }

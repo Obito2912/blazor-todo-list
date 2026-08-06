@@ -1,18 +1,17 @@
-@page "/tasks"
+@page "/tasks/completed"
 @rendermode InteractiveServer
 @inject NavigationManager Navigation
 @inject ITaskService TaskService
 @inject AuthenticationStateProvider AuthProvider
 @using System.Security.Claims
 
-<PageTitle>My Tasks | My Quest</PageTitle>
+<PageTitle>Completed | My Quest</PageTitle>
 
-<section class="task-page" aria-labelledby="task-list-heading">
-    <h1 id="task-list-heading">My Tasks</h1>
+<section class="task-page" aria-labelledby="completed-list-heading">
+    <h1 id="completed-list-heading">Completed</h1>
 
     <div class="task-toolbar">
         <SearchBar @bind-Value="searchTerm" />
-        <FilterDropDown @bind-Value="selectedFilter" />
         <a class="btn-quest-primary" href="tasks/new">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"></path></svg>
             Add Task
@@ -37,9 +36,8 @@
     else if (FilteredTasks.Count == 0)
     {
         <div class="task-state task-state--empty">
-            <h2>No matching tasks</h2>
-            <p>Try another search or status filter.</p>
-            <button type="button" class="btn btn-outline-secondary" @onclick="ClearFilters">Clear filters</button>
+            <h2>No completed tasks yet</h2>
+            <p>Finished tasks will show up here.</p>
         </div>
     }
     else
@@ -62,7 +60,6 @@
 
 @code {
     private string searchTerm = string.Empty;
-    private TaskFilter selectedFilter = TaskFilter.All;
     private List<TaskListItem> tasks = new();
     private string? userId;
 
@@ -73,12 +70,6 @@
         .Where(task => string.IsNullOrWhiteSpace(searchTerm)
             || task.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
             || (task.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
-        .Where(task => selectedFilter switch
-        {
-            TaskFilter.Completed => task.IsCompleted,
-            TaskFilter.Pending => !task.IsCompleted,
-            _ => true
-        })
         .ToList();
 
     protected override async Task OnInitializedAsync()
@@ -102,7 +93,7 @@
 
         try
         {
-            tasks = await TaskService.GetAllForUserAsync(userId);
+            tasks = await TaskService.FilterByStatusAsync(userId, TaskFilter.Completed);
         }
         catch (Exception ex)
         {
@@ -121,7 +112,9 @@
         var success = await TaskService.ToggleStatusAsync(userId, id);
         if (success)
         {
-            tasks = tasks.Select(task => task.Id == id ? task with { IsCompleted = completed } : task).ToList();
+            // Unchecking here means the task is no longer completed —
+            // it no longer belongs in this view, so drop it instead of updating it in place.
+            tasks = tasks.Where(task => task.Id != id).ToList();
         }
     }
 
@@ -137,10 +130,4 @@
     }
 
     private void EditTask(int id) => Navigation.NavigateTo($"tasks/new?edit={id}");
-
-    private void ClearFilters()
-    {
-        searchTerm = string.Empty;
-        selectedFilter = TaskFilter.All;
-    }
 }
