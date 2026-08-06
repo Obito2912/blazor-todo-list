@@ -12,9 +12,11 @@ public class TaskService : ITaskService
 
     public async Task<TaskListItem> AddAsync(string userId, TaskFormValue formValue)
     {
+        ValidateFormValue(formValue);
+
         var task = new TaskItem
         {
-            Title = formValue.Title,
+            Title = formValue.Title.Trim(),
             Description = formValue.Description,
             DueDate = formValue.DueDate,
             UserId = userId,
@@ -30,12 +32,14 @@ public class TaskService : ITaskService
 
     public async Task<TaskListItem?> UpdateAsync(string userId, int taskId, TaskFormValue formValue)
     {
+        ValidateFormValue(formValue);
+
         var task = await _context.TaskItems
             .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
 
         if (task is null) return null;
 
-        task.Title = formValue.Title;
+        task.Title = formValue.Title.Trim();
         task.Description = formValue.Description;
         task.DueDate = formValue.DueDate;
 
@@ -110,6 +114,19 @@ public class TaskService : ITaskService
         task.IsCompleted = !task.IsCompleted;
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    private static void ValidateFormValue(TaskFormValue formValue)
+    {
+        if (string.IsNullOrWhiteSpace(formValue.Title))
+        {
+            throw new ArgumentException("Title cannot be empty.", nameof(formValue));
+        }
+
+        if (formValue.DueDate is { } dueDate && dueDate.Date < DateTime.Today)
+        {
+            throw new ArgumentException("Due date cannot be in the past.", nameof(formValue));
+        }
     }
 
     private static TaskListItem ToListItem(TaskItem task) =>
