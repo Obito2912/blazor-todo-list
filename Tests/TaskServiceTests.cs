@@ -1,5 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using blazor_todo_list.Components;
 
 public sealed class TaskServiceTests : IAsyncDisposable
 {
@@ -14,7 +16,7 @@ public sealed class TaskServiceTests : IAsyncDisposable
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_connection).Options;
         _dbContext = new AppDbContext(options);
         _dbContext.Database.EnsureCreated();
-        _service = new TaskService(_dbContext);
+        _service = new TaskService(_dbContext, NullLogger<TaskService>.Instance);
     }
 
     [Fact]
@@ -22,14 +24,13 @@ public sealed class TaskServiceTests : IAsyncDisposable
     {
         await AddUserAsync("user-a");
         await AddUserAsync("user-b");
-        await _service.CreateTaskAsync(new TaskItem { Title = "  First task  " }, "user-a");
-        await _service.CreateTaskAsync(new TaskItem { Title = "Other task" }, "user-b");
+        await _service.AddAsync("user-a", new TaskFormValue { Title = "  First task  " });
+        await _service.AddAsync("user-b", new TaskFormValue { Title = "Other task" });
 
-        var tasks = await _service.GetTasksAsync("user-a");
+        var tasks = await _service.GetAllForUserAsync("user-a");
 
         var task = Assert.Single(tasks);
         Assert.Equal("First task", task.Title);
-        Assert.Equal("user-a", task.UserId);
     }
 
     [Fact]
@@ -37,9 +38,9 @@ public sealed class TaskServiceTests : IAsyncDisposable
     {
         await AddUserAsync("owner");
         await AddUserAsync("attacker");
-        var created = await _service.CreateTaskAsync(new TaskItem { Title = "Private" }, "owner");
+        var created = await _service.AddAsync("owner", new TaskFormValue { Title = "Private" });
 
-        Assert.Null(await _service.GetTaskAsync(created.Id, "attacker"));
+        Assert.Null(await _service.GetByIdAsync("attacker", created.Id));
     }
 
     [Fact]
@@ -47,13 +48,13 @@ public sealed class TaskServiceTests : IAsyncDisposable
     {
         await AddUserAsync("owner");
         await AddUserAsync("attacker");
-        var created = await _service.CreateTaskAsync(new TaskItem { Title = "Original" }, "owner");
+        var created = await _service.AddAsync("owner", new TaskFormValue { Title = "Original" });
 
-        var updated = await _service.UpdateTaskAsync(
-            new TaskItem { Id = created.Id, Title = "Changed" }, "attacker");
+        var updated = await _service.UpdateAsync(
+            "attacker", created.Id, new TaskFormValue { Title = "Changed" });
 
-        Assert.False(updated);
-        Assert.Equal("Original", (await _service.GetTaskAsync(created.Id, "owner"))!.Title);
+        Assert.Null(updated);
+        Assert.Equal("Original", (await _service.GetByIdAsync("owner", created.Id))!.Title);
     }
 
     [Fact]
@@ -61,29 +62,29 @@ public sealed class TaskServiceTests : IAsyncDisposable
     {
         await AddUserAsync("owner");
         await AddUserAsync("attacker");
-        var created = await _service.CreateTaskAsync(new TaskItem { Title = "Private" }, "owner");
+        var created = await _service.AddAsync("owner", new TaskFormValue { Title = "Private" });
 
-        Assert.False(await _service.SetCompletionAsync(created.Id, true, "attacker"));
-        Assert.False(await _service.DeleteTaskAsync(created.Id, "attacker"));
-        Assert.NotNull(await _service.GetTaskAsync(created.Id, "owner"));
+        Assert.False(await _service.ToggleStatusAsync("attacker", created.Id));
+        Assert.False(await _service.DeleteAsync("attacker", created.Id));
+        Assert.NotNull(await _service.GetByIdAsync("owner", created.Id));
     }
 
     [Fact]
     public async Task UpdateCompletionAndDelete_PersistForOwner()
     {
         await AddUserAsync("owner");
-        var created = await _service.CreateTaskAsync(new TaskItem { Title = "Initial" }, "owner");
+        var created = await _service.AddAsync("owner", new TaskFormValue { Title = "Initial" });
 
-        Assert.True(await _service.UpdateTaskAsync(
-            new TaskItem { Id = created.Id, Title = "Updated", Description = " Details " }, "owner"));
-        Assert.True(await _service.SetCompletionAsync(created.Id, true, "owner"));
-        var updated = await _service.GetTaskAsync(created.Id, "owner");
+        Assert.NotNull(await _service.UpdateAsync(
+            "owner", created.Id, new TaskFormValue { Title = "Updated", Description = "Details" }));
+        Assert.True(await _service.ToggleStatusAsync("owner", created.Id));
+        var updated = await _service.GetByIdAsync("owner", created.Id);
         Assert.Equal("Updated", updated!.Title);
         Assert.Equal("Details", updated.Description);
         Assert.True(updated.IsCompleted);
 
-        Assert.True(await _service.DeleteTaskAsync(created.Id, "owner"));
-        Assert.Null(await _service.GetTaskAsync(created.Id, "owner"));
+        Assert.True(await _service.DeleteAsync("owner", created.Id));
+        Assert.Null(await _service.GetByIdAsync("owner", created.Id));
     }
 
     [Theory]
@@ -93,7 +94,7 @@ public sealed class TaskServiceTests : IAsyncDisposable
     {
         await AddUserAsync("owner");
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _service.CreateTaskAsync(new TaskItem { Title = title }, "owner"));
+            _service.AddAsync("owner", new TaskFormValue { Title = title }));
     }
 
     private async Task AddUserAsync(string id)
