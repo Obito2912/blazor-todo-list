@@ -4,10 +4,11 @@ using Microsoft.EntityFrameworkCore;
 public class TaskService : ITaskService
 {
     private readonly AppDbContext _context;
-
-    public TaskService(AppDbContext context)
+    private readonly ILogger<TaskService> _logger;
+    public TaskService(AppDbContext context, ILogger<TaskService> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     public async Task<TaskListItem> AddAsync(string userId, TaskFormValue formValue)
@@ -27,6 +28,7 @@ public class TaskService : ITaskService
         _context.TaskItems.Add(task);
         await _context.SaveChangesAsync();
 
+        _logger.LogInformation("Task added successfully for user {UserId} with task id {TaskId}.", userId, task.Id);
         return ToListItem(task);
     }
 
@@ -44,6 +46,7 @@ public class TaskService : ITaskService
         task.DueDate = formValue.DueDate;
 
         await _context.SaveChangesAsync();
+        _logger.LogInformation("Task updated successfully for user {UserId} with task id {TaskId}.", userId, task.Id);
         return ToListItem(task);
     }
 
@@ -56,6 +59,7 @@ public class TaskService : ITaskService
 
         _context.TaskItems.Remove(task);
         await _context.SaveChangesAsync();
+        _logger.LogInformation("Task deleted successfully for user {UserId} with task id {TaskId}.", userId, task.Id);
         return true;
     }
 
@@ -113,6 +117,7 @@ public class TaskService : ITaskService
 
         task.IsCompleted = !task.IsCompleted;
         await _context.SaveChangesAsync();
+        _logger.LogInformation("Task status toggled successfully for user {UserId} with task id {TaskId}. New status: {IsCompleted}", userId, task.Id, task.IsCompleted);
         return true;
     }
 
