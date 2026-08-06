@@ -20,13 +20,13 @@
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item">
-                    <NavLink class="nav-link" href="tasks">
+                    <NavLink class="nav-link" href="tasks" Match="NavLinkMatch.All">
                         <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V2m6 2V2M9 9h6m-6 4h6m-6 4h4"></path></svg>
                         My Tasks
                     </NavLink>
                 </div>
                 <div class="nav-item">
-                    <NavLink class="nav-link" href="tasks?filter=completed">
+                    <NavLink class="nav-link" href="tasks/completed">
                         <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16 9"></path></svg>
                         Completed
                     </NavLink>

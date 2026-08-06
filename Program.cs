@@ -13,6 +13,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddAntiforgery();
 
+//DI for ITaskService and TaskService
+builder.Services.AddScoped<ITaskService, TaskService>();
+
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddAuthorization();
