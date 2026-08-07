@@ -3,10 +3,14 @@ using Microsoft.EntityFrameworkCore;
 
 public class TaskService : ITaskService
 {
+    // Dependency injection for the database context and logger
     private readonly AppDbContext _context;
+    // Add a logger to log important events and errors
     private readonly ILogger<TaskService> _logger;
+    // Constructor injection for AppDbContext and ILogger
     public TaskService(AppDbContext context, ILogger<TaskService> logger)
     {
+        // Initialize the injected services
         _context = context;
         _logger = logger;
     }
@@ -45,7 +49,9 @@ public class TaskService : ITaskService
         task.Description = formValue.Description;
         task.DueDate = formValue.DueDate;
 
+        // Save changes to the database
         await _context.SaveChangesAsync();
+        // Log the successful update of the task
         _logger.LogInformation("Task updated successfully for user {UserId} with task id {TaskId}.", userId, task.Id);
         return ToListItem(task);
     }
@@ -59,6 +65,7 @@ public class TaskService : ITaskService
 
         _context.TaskItems.Remove(task);
         await _context.SaveChangesAsync();
+        // Log the successful deletion of the task
         _logger.LogInformation("Task deleted successfully for user {UserId} with task id {TaskId}.", userId, task.Id);
         return true;
     }
@@ -117,6 +124,7 @@ public class TaskService : ITaskService
 
         task.IsCompleted = !task.IsCompleted;
         await _context.SaveChangesAsync();
+        // Log the successful toggling of the task status
         _logger.LogInformation("Task status toggled successfully for user {UserId} with task id {TaskId}. New status: {IsCompleted}", userId, task.Id, task.IsCompleted);
         return true;
     }

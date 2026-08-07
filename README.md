@@ -50,3 +50,7 @@ A test account is seeded automatically on first run:
 - Nyantakyi Francis
 - Herzan Carcache Huerta
 - Emmanuel Oluwatosin Ologe
+
+## Link to project on Render
+
+[https://blazor-todo-list.onrender.com]

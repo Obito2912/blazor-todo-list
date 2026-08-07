@@ -5,9 +5,12 @@ public class AccountService : IAccountService
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    // Add a logger to log important events and errors
     private readonly ILogger<AccountService> _logger;
+    // Constructor injection for UserManager, SignInManager, and ILogger
     public AccountService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ILogger<AccountService> logger)
     {
+        // Initialize the injected services
         _userManager = userManager;
         _signInManager = signInManager;
         _logger = logger;
@@ -90,7 +93,9 @@ public class AccountService : IAccountService
         var updateResult = await _userManager.UpdateAsync(user);
         if (updateResult.Succeeded)
         {
+            // Refresh the sign-in to update the user's claims and authentication cookie
             await _signInManager.RefreshSignInAsync(user);
+            // Log the successful profile update
             _logger.LogInformation("User profile updated successfully for user {UserId}.", user.Id);
         }
 
@@ -103,7 +108,9 @@ public class AccountService : IAccountService
         var result = await _userManager.UpdateAsync(user);
         if (result.Succeeded)
         {
+            // Refresh the sign-in to update the user's claims and authentication cookie
             await _signInManager.RefreshSignInAsync(user);
+            // Log the successful profile image update
             _logger.LogInformation("User profile image updated successfully for user {UserId}.", user.Id);
         }
 
@@ -115,7 +122,9 @@ public class AccountService : IAccountService
         var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
         if (result.Succeeded)
         {
+            // Refresh the sign-in to update the user's claims and authentication cookie
             await _signInManager.RefreshSignInAsync(user);
+            // Log the successful password change
             _logger.LogInformation("User password changed successfully for user {UserId}.", user.Id);
         }
 
