@@ -73,6 +73,7 @@ public class AccountService : IAccountService
 
         if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
         {
+            // here both email and username need updating together so login wont break after changing one of them
             var setEmailResult = await _userManager.SetEmailAsync(user, email);
             if (!setEmailResult.Succeeded)
             {
@@ -107,6 +108,7 @@ public class AccountService : IAccountService
         return result;
     }
 
+    // Using UserManager to handle hash comparison and new password validation against our rules
     public async Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword)
     {
         return await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
