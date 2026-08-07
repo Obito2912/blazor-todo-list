@@ -41,6 +41,7 @@ public class TaskService : ITaskService
         ValidateFormValue(formValue);
 
         var task = await _context.TaskItems
+            // Also filtering by userId here, to prevent wrong acess to tasks that arent theirs, inc ase they guess a valid task ID.
             .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
 
         if (task is null) return null;
@@ -59,6 +60,7 @@ public class TaskService : ITaskService
     public async Task<bool> DeleteAsync(string userId, int taskId)
     {
         var task = await _context.TaskItems
+            // Also filtering by userId here, to prevent wrong acess to tasks that arent theirs, inc ase they guess a valid task ID.
             .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
 
         if (task is null) return false;
@@ -78,6 +80,7 @@ public class TaskService : ITaskService
         return task is null ? null : ToListItem(task);
     }
 
+    // Projecting inside the query so it only pulls the columns needed
     public async Task<List<TaskListItem>> GetAllForUserAsync(string userId)
     {
         return await _context.TaskItems
@@ -87,6 +90,7 @@ public class TaskService : ITaskService
             .ToListAsync();
     }
 
+    // Projecting inside the query so it only pulls the columns needed
     public async Task<List<TaskListItem>> SearchAsync(string userId, string searchTerm)
     {
         var term = searchTerm?.Trim() ?? string.Empty;
@@ -98,6 +102,7 @@ public class TaskService : ITaskService
             .ToListAsync();
     }
 
+    //same query as GetAllForUserAsync, reused here.
     public async Task<List<TaskListItem>> FilterByStatusAsync(string userId, TaskFilter filter)
     {
         var query = _context.TaskItems.Where(t => t.UserId == userId);
@@ -118,6 +123,7 @@ public class TaskService : ITaskService
     public async Task<bool> ToggleStatusAsync(string userId, int taskId)
     {
         var task = await _context.TaskItems
+            // Also filtering by userId here, to prevent wrong acess to tasks that arent theirs, inc ase they guess a valid task ID.
             .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
 
         if (task is null) return false;
@@ -129,6 +135,7 @@ public class TaskService : ITaskService
         return true;
     }
 
+    // Double-check on validation here: the form already has title required, but in case UI is tampered with...
     private static void ValidateFormValue(TaskFormValue formValue)
     {
         if (string.IsNullOrWhiteSpace(formValue.Title))
